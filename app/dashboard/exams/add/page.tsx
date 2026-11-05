@@ -30,6 +30,12 @@ type Subject = {
   units?: string[];
   syllabus?: string[];
   description?: string;
+  courseId?: string;
+  courseName?: string;
+  branchId?: string;
+  branchName?: string;
+  semesterId?: string;
+  semesterName?: string;
 };
 
 type GeneratedQuestion = {
@@ -291,14 +297,20 @@ End Semester Examination Pattern:
           : [];
 
       const normalized = list.map((item: any) => ({
-        id: String(item.id || item.subjectId || ""),
-        name: String(item.name || item.subjectName || "Unnamed Subject"),
-        code: item.code || item.subjectCode || "",
-        credits: item.credits || 0,
-        units: Array.isArray(item.units) ? item.units : [],
-        syllabus: Array.isArray(item.syllabus) ? item.syllabus : [],
-        description: item.description || "",
-      }));
+  id: String(item.id || item.subjectId || ""),
+  name: String(item.name || item.subjectName || "Unnamed Subject"),
+  code: item.code || item.subjectCode || "",
+  credits: item.credits || 0,
+  units: Array.isArray(item.units) ? item.units : [],
+  syllabus: Array.isArray(item.syllabus) ? item.syllabus : [],
+  description: item.description || "",
+  courseId: item.courseId || "",
+  courseName: item.courseName || "",
+  branchId: item.branchId || "",
+  branchName: item.branchName || "",
+  semesterId: item.semesterId || "",
+  semesterName: item.semesterName || "",
+}));
 
       setSubjects(normalized);
 
@@ -1604,28 +1616,32 @@ const isAnswered =
               </div>
 
               <div className="mt-5">
-                <select
-                  value={subjectId}
-                  onChange={(event) =>
-                    setSubjectId(event.target.value)
-                  }
-                  className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none transition focus:border-blue-500"
-                >
-                  <option value="" className="bg-zinc-950">
-                    Select a subject
-                  </option>
+ <select
+  value={subject?.id || ""}
+  onChange={(e) => {
+    const selected = subjects.find(
+      (item) => item.id === e.target.value
+    );
 
-                  {subjects.map((item) => (
-                    <option
-                      key={item.id}
-                      value={item.id}
-                      className="bg-zinc-950"
-                    >
-                      {item.name}
-                      {item.code ? ` (${item.code})` : ""}
-                    </option>
-                  ))}
-                </select>
+    setSubject(selected || null);
+    setSubjectId(e.target.value);
+  }}
+  className="w-full rounded-xl border border-white/10 bg-zinc-900 px-4 py-3 text-white"
+>
+  <option value="">Select Subject</option>
+
+  {subjects.map((item) => (
+    <option key={item.id} value={item.id}>
+      {item.name} {item.code ? `(${item.code})` : ""}
+    </option>
+  ))}
+</select>
+
+{!loadingSubjects && subjects.length === 0 && (
+  <p className="mt-2 text-sm text-red-400">
+    No subjects found. Please try again.
+  </p>
+)}
 
                 {loadingSubject && (
                   <div className="mt-3 flex items-center gap-2 text-xs text-zinc-500">

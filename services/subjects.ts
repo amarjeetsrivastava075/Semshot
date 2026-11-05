@@ -3,13 +3,15 @@ import {
   collection,
   deleteDoc,
   doc,
+  getDoc,
   getDocs,
-  query,
-  where,
+  Timestamp,
 } from "firebase/firestore";
+
 import { db } from "@/firebase/firebase";
 
 export type SubjectData = {
+  universityId: string;
   courseId: string;
   branchId: string;
   semesterId: string;
@@ -23,68 +25,77 @@ export type SubjectData = {
 export async function addSubject(data: SubjectData) {
   const ref = await addDoc(collection(db, "subjects"), {
     ...data,
-    createdAt: new Date(),
+    createdAt: Timestamp.now(),
   });
 
   return ref.id;
 }
 
 export async function getSubjects(
-  semesterId?: string,
+  universityId?: string,
+  courseId?: string,
   branchId?: string,
-  courseId?: string
+  semesterId?: string
 ) {
-  const subjectsRef = collection(db, "subjects");
+  const snapshot = await getDocs(collection(db, "subjects"));
 
-  let q;
+  const subjects = snapshot.docs.map((item) => {
+    const data = item.data();
 
-  if (semesterId) {
-    q = query(
-      subjectsRef,
-      where("semesterId", "==", semesterId)
-    );
-  } else if (branchId) {
-    q = query(
-      subjectsRef,
-      where("branchId", "==", branchId)
-    );
-  } else if (courseId) {
-    q = query(
-      subjectsRef,
-      where("courseId", "==", courseId)
-    );
-  } else {
-    const snapshot = await getDocs(subjectsRef);
-
-    return snapshot.docs.map((item) => ({
+    return {
       id: item.id,
-      ...item.data(),
-    }));
-  }
+      universityId: data.universityId || "",
+      courseId: data.courseId || "",
+      branchId: data.branchId || "",
+      semesterId: data.semesterId || "",
+      name: data.name || data.subjectName || "Unnamed Subject",
+      code: data.code || data.subjectCode || "",
+      credits: Number(data.credits || 0),
+      units: Array.isArray(data.units) ? data.units : [],
+      description: data.description || "",
+    };
+  });
 
-  const snapshot = await getDocs(q);
+  return subjects.filter((subject) => {
+    const universityMatch =
+      !universityId ||
+      !subject.universityId ||
+      subject.universityId === universityId;
 
-  return snapshot.docs.map((item) => ({
-    id: item.id,
-    ...item.data(),
-  }));
+    const courseMatch =
+      !courseId ||
+      !subject.courseId ||
+      subject.courseId === courseId;
+
+    const branchMatch =
+      !branchId ||
+      !subject.branchId ||
+      subject.branchId === branchId;
+
+    const semesterMatch =
+      !semesterId ||
+      !subject.semesterId ||
+      subject.semesterId === semesterId;
+
+    return (
+      universityMatch &&
+      courseMatch &&
+      branchMatch &&
+      semesterMatch
+    );
+  });
 }
 
 export async function getSubjectById(id: string) {
-  const snapshot = await getDocs(
-    query(
-      collection(db, "subjects"),
-      where("__name__", "==", id)
-    )
-  );
+  const snapshot = await getDoc(doc(db, "subjects", id));
 
-  if (snapshot.empty) {
+  if (!snapshot.exists()) {
     return null;
   }
 
   return {
-    id: snapshot.docs[0].id,
-    ...snapshot.docs[0].data(),
+    id: snapshot.id,
+    ...snapshot.data(),
   };
 }
 

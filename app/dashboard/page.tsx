@@ -1,5 +1,7 @@
 "use client";
 
+import { collection, getDocs } from "firebase/firestore";
+import { db } from "@/firebase/firebase";
 import { useEffect, useState } from "react";
 import {
   ArrowRight,
@@ -16,7 +18,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
-const stats = [
+const initialStats = [
   {
     title: "Universities",
     value: "0",
@@ -42,7 +44,6 @@ const stats = [
     href: "/dashboard/notes",
   },
 ];
-
 const features = [
   {
     title: "AI Question Generator",
@@ -78,6 +79,34 @@ type ExamResult = {
 };
 
 export default function DashboardPage() {
+  const [stats, setStats] = useState(initialStats);
+
+useEffect(() => {
+  const loadStats = async () => {
+    const collections = [
+      "universities",
+      "courses",
+      "subjects",
+      "notes",
+    ];
+
+    const results = await Promise.allSettled(
+      collections.map((name) => getDocs(collection(db, name)))
+    );
+
+    setStats((current) =>
+      current.map((stat, index) => ({
+        ...stat,
+        value:
+          results[index].status === "fulfilled"
+            ? String(results[index].value.size)
+            : "0",
+      }))
+    );
+  };
+
+  loadStats();
+}, []);
   const [examResults, setExamResults] = useState<ExamResult[]>([]);
 
   useEffect(() => {

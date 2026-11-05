@@ -31,12 +31,8 @@ export async function GET() {
     console.error("Subjects API Error:", error);
 
     return NextResponse.json(
-      {
-        error: "Failed to fetch subjects",
-      },
-      {
-        status: 500,
-      }
+      { error: "Failed to fetch subjects" },
+      { status: 500 }
     );
   }
 }

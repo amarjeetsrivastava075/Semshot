@@ -6,6 +6,7 @@ import { addSubject } from "@/services/subjects";
 import { getCourses } from "@/services/course";
 import { getBranches } from "@/services/branch";
 import { getSemesters } from "@/services/semester";
+import useAuth from "@/hooks/useAuth";
 
 type Course = {
   id: string;
@@ -29,6 +30,14 @@ type Semester = {
 export default function SubjectForm() {
   const router = useRouter();
 
+  const {
+    user,
+    profile,
+    loading: authLoading,
+    profileLoading,
+    profileCompleted,
+  } = useAuth();
+
   const [courses, setCourses] = useState<Course[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [semesters, setSemesters] = useState<Semester[]>([]);
@@ -51,69 +60,77 @@ export default function SubjectForm() {
   ]);
 
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    async function loadCourses() {
+    async function loadAcademicData() {
       try {
-        const data = await getCourses();
-        setCourses(data as Course[]);
+        if (!profile?.courseId || !profile?.branchId) {
+          return;
+        }
+
+        const [courseData, branchData, semesterData] =
+          await Promise.all([
+            getCourses(),
+            getBranches(profile.courseId),
+            getSemesters(
+              profile.courseId,
+              profile.branchId
+            ),
+          ]);
+
+        setCourses(courseData as Course[]);
+        setBranches(branchData as Branch[]);
+        setSemesters(
+          semesterData as Semester[]
+        );
       } catch (error) {
-        console.error(error);
-      }
-    }
-
-    loadCourses();
-  }, []);
-
-  useEffect(() => {
-    async function loadBranches() {
-      if (!courseId) {
-        setBranches([]);
-        setBranchId("");
-        setSemesters([]);
-        setSemesterId("");
-        return;
-      }
-
-      try {
-        const data = await getBranches(courseId);
-        setBranches(data as Branch[]);
-        setBranchId("");
-        setSemesters([]);
-        setSemesterId("");
-      } catch (error) {
-        console.error(error);
-      }
-    }
-
-    loadBranches();
-  }, [courseId]);
-
-  useEffect(() => {
-    async function loadSemesters() {
-      if (!branchId) {
-        setSemesters([]);
-        setSemesterId("");
-        return;
-      }
-
-      try {
-        const data = await getSemesters(
-          courseId,
-          branchId
+        console.error(
+          "Failed to load academic data:",
+          error
         );
 
-        setSemesters(data as Semester[]);
-        setSemesterId("");
-      } catch (error) {
-        console.error(error);
+        setError(
+          "Failed to load academic information."
+        );
       }
     }
 
-    loadSemesters();
-  }, [branchId, courseId]);
+    if (
+      user &&
+      profileCompleted &&
+      profile
+    ) {
+      loadAcademicData();
+    }
+  }, [
+    user,
+    profile,
+    profileCompleted,
+  ]);
 
-  function updateUnit(index: number, value: string) {
+  useEffect(() => {
+    if (!profile) {
+      return;
+    }
+
+    if (profile.courseId) {
+      setCourseId(profile.courseId);
+    }
+
+    if (profile.branchId) {
+      setBranchId(profile.branchId);
+    }
+
+    if (profile.semesterId) {
+      setSemesterId(profile.semesterId);
+    }
+  }, [profile]);
+
+  function updateUnit(
+    index: number,
+    value: string
+  ) {
     setUnits((current) => {
       const updated = [...current];
       updated[index] = value;
@@ -122,14 +139,21 @@ export default function SubjectForm() {
   }
 
   function addUnit() {
-    setUnits((current) => [...current, ""]);
+    setUnits((current) => [
+      ...current,
+      "",
+    ]);
   }
 
   function removeUnit(index: number) {
-    if (units.length <= 1) return;
+    if (units.length <= 1) {
+      return;
+    }
 
     setUnits((current) =>
-      current.filter((_, i) => i !== index)
+      current.filter(
+        (_, i) => i !== index
+      )
     );
   }
 
@@ -138,28 +162,76 @@ export default function SubjectForm() {
   ) {
     e.preventDefault();
 
-    if (!courseId) {
-      alert("Select course");
+    setError("");
+
+    if (authLoading || profileLoading) {
+      setError(
+        "Please wait while your academic profile loads."
+      );
       return;
     }
 
-    if (!branchId) {
-      alert("Select branch");
+    if (!user) {
+      setError(
+        "Please login before adding a subject."
+      );
       return;
     }
 
-    if (!semesterId) {
-      alert("Select semester");
+    if (!profileCompleted || !profile) {
+      setError(
+        "Please complete your academic profile first."
+      );
+      return;
+    }
+
+    const finalUniversityId =
+      profile.universityId;
+
+    const finalCourseId =
+      profile.courseId || courseId;
+
+    const finalBranchId =
+      profile.branchId || branchId;
+
+    const finalSemesterId =
+      profile.semesterId || semesterId;
+
+    if (!finalUniversityId) {
+      setError(
+        "Your university is not selected."
+      );
+      return;
+    }
+
+    if (!finalCourseId) {
+      setError(
+        "Your course is not selected."
+      );
+      return;
+    }
+
+    if (!finalBranchId) {
+      setError(
+        "Your branch is not selected."
+      );
+      return;
+    }
+
+    if (!finalSemesterId) {
+      setError(
+        "Your semester is not selected."
+      );
       return;
     }
 
     if (!name.trim()) {
-      alert("Enter subject name");
+      setError("Enter subject name.");
       return;
     }
 
     if (!code.trim()) {
-      alert("Enter subject code");
+      setError("Enter subject code.");
       return;
     }
 
@@ -168,7 +240,9 @@ export default function SubjectForm() {
       .filter(Boolean);
 
     if (validUnits.length === 0) {
-      alert("Add at least one unit");
+      setError(
+        "Add at least one syllabus unit."
+      );
       return;
     }
 
@@ -176,9 +250,10 @@ export default function SubjectForm() {
       setLoading(true);
 
       await addSubject({
-        courseId,
-        branchId,
-        semesterId,
+        universityId: finalUniversityId,
+        courseId: finalCourseId,
+        branchId: finalBranchId,
+        semesterId: finalSemesterId,
         name: name.trim(),
         code: code.trim(),
         credits: Number(credits),
@@ -186,16 +261,93 @@ export default function SubjectForm() {
         description: description.trim(),
       });
 
-      alert("Subject added successfully");
+      alert(
+        "Subject added successfully"
+      );
 
-      router.push("/dashboard/subjects");
+      router.push(
+        "/dashboard/subjects"
+      );
+
       router.refresh();
     } catch (error) {
-      console.error(error);
-      alert("Failed to add subject");
+      console.error(
+        "Failed to add subject:",
+        error
+      );
+
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Failed to add subject."
+      );
     } finally {
       setLoading(false);
     }
+  }
+
+  const selectedCourse = courses.find(
+    (course) =>
+      course.id === courseId
+  );
+
+  const selectedBranch = branches.find(
+    (branch) =>
+      branch.id === branchId
+  );
+
+  const selectedSemester =
+    semesters.find(
+      (semester) =>
+        semester.id === semesterId
+    );
+
+  if (
+    authLoading ||
+    profileLoading
+  ) {
+    return (
+      <div className="flex min-h-[400px] items-center justify-center">
+        <div className="text-center">
+          <div className="mx-auto h-9 w-9 animate-spin rounded-full border-2 border-zinc-800 border-t-blue-500" />
+
+          <p className="mt-4 text-sm text-zinc-500">
+            Loading your academic profile...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="rounded-2xl border border-red-500/20 bg-red-500/5 p-6 text-center">
+        <p className="text-red-400">
+          Please login before adding a subject.
+        </p>
+      </div>
+    );
+  }
+
+  if (!profileCompleted || !profile) {
+    return (
+      <div className="rounded-2xl border border-yellow-500/20 bg-yellow-500/5 p-6 text-center">
+        <p className="text-yellow-400">
+          Please complete your academic profile
+          before adding a subject.
+        </p>
+
+        <button
+          type="button"
+          onClick={() =>
+            router.push("/onboarding")
+          }
+          className="mt-4 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-500"
+        >
+          Complete Profile
+        </button>
+      </div>
+    );
   }
 
   return (
@@ -203,6 +355,73 @@ export default function SubjectForm() {
       onSubmit={handleSubmit}
       className="mx-auto max-w-4xl space-y-7"
     >
+      <div className="rounded-2xl border border-blue-500/20 bg-blue-500/5 p-5">
+        <div className="flex items-start gap-4">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-500/10 text-blue-400">
+            <span className="text-lg">
+              🎓
+            </span>
+          </div>
+
+          <div>
+            <h2 className="font-semibold text-white">
+              Your Academic Profile
+            </h2>
+
+            <p className="mt-1 text-sm text-zinc-500">
+              This subject will automatically be
+              assigned to your selected academic
+              profile.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-5 grid gap-3 md:grid-cols-4">
+          <div className="rounded-xl bg-zinc-900/70 p-4">
+            <p className="text-xs text-zinc-500">
+              University
+            </p>
+
+            <p className="mt-1 font-medium text-white">
+              {profile.universityId}
+            </p>
+          </div>
+
+          <div className="rounded-xl bg-zinc-900/70 p-4">
+            <p className="text-xs text-zinc-500">
+              Course
+            </p>
+
+            <p className="mt-1 font-medium text-white">
+              {selectedCourse?.name ||
+  profile.courseId}
+            </p>
+          </div>
+
+          <div className="rounded-xl bg-zinc-900/70 p-4">
+            <p className="text-xs text-zinc-500">
+              Branch
+            </p>
+
+            <p className="mt-1 font-medium text-white">
+              {selectedBranch?.name ||
+  profile.branchId}
+            </p>
+          </div>
+
+          <div className="rounded-xl bg-zinc-900/70 p-4">
+            <p className="text-xs text-zinc-500">
+              Semester
+            </p>
+
+            <p className="mt-1 font-medium text-white">
+              {selectedSemester?.name ||
+  profile.semesterId}
+            </p>
+          </div>
+        </div>
+      </div>
+
       <div className="grid gap-5 md:grid-cols-2">
         <div>
           <label className="mb-2 block text-sm font-medium text-zinc-300">
@@ -211,16 +430,18 @@ export default function SubjectForm() {
 
           <select
             value={courseId}
-            onChange={(e) => setCourseId(e.target.value)}
-            className="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-white outline-none focus:border-blue-500"
+            disabled
+            className="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-white outline-none disabled:cursor-not-allowed disabled:opacity-70"
           >
-            <option value="">Select Course</option>
+            <option value="">
+              Select Course
+            </option>
 
-            {courses.map((course) => (
-              <option key={course.id} value={course.id}>
-                {course.name}
+            {selectedCourse && (
+              <option value={selectedCourse.id}>
+                {selectedCourse.name}
               </option>
-            ))}
+            )}
           </select>
         </div>
 
@@ -231,21 +452,18 @@ export default function SubjectForm() {
 
           <select
             value={branchId}
-            onChange={(e) => setBranchId(e.target.value)}
-            disabled={!courseId}
-            className="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-white outline-none focus:border-blue-500 disabled:opacity-50"
+            disabled
+            className="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-white outline-none disabled:cursor-not-allowed disabled:opacity-70"
           >
             <option value="">
-              {courseId
-                ? "Select Branch"
-                : "Select course first"}
+              Select Branch
             </option>
 
-            {branches.map((branch) => (
-              <option key={branch.id} value={branch.id}>
-                {branch.name}
+            {selectedBranch && (
+              <option value={selectedBranch.id}>
+                {selectedBranch.name}
               </option>
-            ))}
+            )}
           </select>
         </div>
       </div>
@@ -257,21 +475,18 @@ export default function SubjectForm() {
 
         <select
           value={semesterId}
-          onChange={(e) => setSemesterId(e.target.value)}
-          disabled={!branchId}
-          className="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-white outline-none focus:border-blue-500 disabled:opacity-50"
+          disabled
+          className="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-white outline-none disabled:cursor-not-allowed disabled:opacity-70"
         >
           <option value="">
-            {branchId
-              ? "Select Semester"
-              : "Select branch first"}
+            Select Semester
           </option>
 
-          {semesters.map((semester) => (
-            <option key={semester.id} value={semester.id}>
-              {semester.name}
+          {selectedSemester && (
+            <option value={selectedSemester.id}>
+              {selectedSemester.name}
             </option>
-          ))}
+          )}
         </select>
       </div>
 
@@ -283,10 +498,18 @@ export default function SubjectForm() {
 
           <input
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e) =>
+              setName(e.target.value)
+            }
             placeholder="Database Management System"
             className="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-white placeholder:text-zinc-600 outline-none focus:border-blue-500"
           />
+
+          <p className="mt-2 text-xs text-zinc-600">
+            You can enter the subject name normally.
+            SemShot can understand common subject
+            names for AI preparation.
+          </p>
         </div>
 
         <div>
@@ -296,7 +519,9 @@ export default function SubjectForm() {
 
           <input
             value={code}
-            onChange={(e) => setCode(e.target.value)}
+            onChange={(e) =>
+              setCode(e.target.value)
+            }
             placeholder="CSE-301"
             className="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-white placeholder:text-zinc-600 outline-none focus:border-blue-500"
           />
@@ -310,15 +535,34 @@ export default function SubjectForm() {
 
         <select
           value={credits}
-          onChange={(e) => setCredits(e.target.value)}
+          onChange={(e) =>
+            setCredits(e.target.value)
+          }
           className="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-white outline-none focus:border-blue-500"
         >
-          <option value="1">1 Credit</option>
-          <option value="2">2 Credits</option>
-          <option value="3">3 Credits</option>
-          <option value="4">4 Credits</option>
-          <option value="5">5 Credits</option>
-          <option value="6">6 Credits</option>
+          <option value="1">
+            1 Credit
+          </option>
+
+          <option value="2">
+            2 Credits
+          </option>
+
+          <option value="3">
+            3 Credits
+          </option>
+
+          <option value="4">
+            4 Credits
+          </option>
+
+          <option value="5">
+            5 Credits
+          </option>
+
+          <option value="6">
+            6 Credits
+          </option>
         </select>
       </div>
 
@@ -330,7 +574,8 @@ export default function SubjectForm() {
             </h2>
 
             <p className="text-sm text-zinc-500">
-              Add topics that AI will use for question generation.
+              Add topics that AI will use for
+              question generation.
             </p>
           </div>
 
@@ -344,35 +589,44 @@ export default function SubjectForm() {
         </div>
 
         <div className="space-y-3">
-          {units.map((unit, index) => (
-            <div
-              key={index}
-              className="flex gap-3"
-            >
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-500/10 text-sm font-bold text-blue-400">
-                U{index + 1}
+          {units.map(
+            (unit, index) => (
+              <div
+                key={index}
+                className="flex gap-3"
+              >
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-500/10 text-sm font-bold text-blue-400">
+                  U{index + 1}
+                </div>
+
+                <input
+                  value={unit}
+                  onChange={(e) =>
+                    updateUnit(
+                      index,
+                      e.target.value
+                    )
+                  }
+                  placeholder={`Unit ${
+                    index + 1
+                  } topic`}
+                  className="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-white placeholder:text-zinc-600 outline-none focus:border-blue-500"
+                />
+
+                {units.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      removeUnit(index)
+                    }
+                    className="rounded-xl border border-zinc-800 px-4 text-zinc-500 transition hover:border-red-500/50 hover:text-red-400"
+                  >
+                    ×
+                  </button>
+                )}
               </div>
-
-              <input
-                value={unit}
-                onChange={(e) =>
-                  updateUnit(index, e.target.value)
-                }
-                placeholder={`Unit ${index + 1} topic`}
-                className="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-white placeholder:text-zinc-600 outline-none focus:border-blue-500"
-              />
-
-              {units.length > 1 && (
-                <button
-                  type="button"
-                  onClick={() => removeUnit(index)}
-                  className="rounded-xl border border-zinc-800 px-4 text-zinc-500 transition hover:border-red-500/50 hover:text-red-400"
-                >
-                  ×
-                </button>
-              )}
-            </div>
-          ))}
+            )
+          )}
         </div>
       </div>
 
@@ -392,21 +646,38 @@ export default function SubjectForm() {
         />
       </div>
 
+      {error && (
+        <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+          {error}
+        </div>
+      )}
+
       <div className="flex gap-3">
         <button
           type="button"
-          onClick={() => router.back()}
-          className="rounded-xl border border-zinc-800 px-6 py-3 text-zinc-300 transition hover:bg-zinc-900"
+          onClick={() =>
+            router.back()
+          }
+          disabled={loading}
+          className="rounded-xl border border-zinc-800 px-6 py-3 text-zinc-300 transition hover:bg-zinc-900 disabled:opacity-50"
         >
           Cancel
         </button>
 
         <button
           type="submit"
-          disabled={loading}
-          className="rounded-xl bg-blue-600 px-7 py-3 font-semibold text-white transition hover:bg-blue-500 disabled:opacity-50"
+          disabled={
+            loading ||
+            !profile.universityId ||
+            !courseId ||
+            !branchId ||
+            !semesterId
+          }
+          className="rounded-xl bg-blue-600 px-7 py-3 font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {loading ? "Saving..." : "Add Subject"}
+          {loading
+            ? "Saving..."
+            : "Add Subject"}
         </button>
       </div>
     </form>

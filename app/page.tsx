@@ -1,89 +1,95 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import {
   ArrowRight,
+  ArrowUpRight,
   BookOpen,
-  Brain,
+  BrainCircuit,
   CheckCircle2,
   ChevronRight,
-  ClipboardList,
   FileText,
   GraduationCap,
+  Layers3,
   Menu,
+  Play,
   Sparkles,
   Target,
   Trophy,
-  Zap,
   X,
-  Layers3,
-  Play,
+  Zap,
+  ShieldCheck,
+  Clock3,
+  ChartNoAxesCombined,
 } from "lucide-react";
-import { useState } from "react";
 
 const features = [
   {
-    icon: Brain,
-    title: "AI-Powered Learning",
+    icon: BookOpen,
+    title: "Smart Study Notes",
     description:
-      "Generate smart questions and understand difficult concepts with AI-powered assistance.",
-    color: "from-blue-500 to-cyan-400",
+      "Access organized notes for your subjects and prepare every topic with clarity.",
+    tag: "STUDY MATERIAL",
   },
   {
     icon: FileText,
-    title: "Smart Notes",
+    title: "Previous Year Questions",
     description:
-      "Keep your study material organized and access your important notes anytime.",
-    color: "from-violet-500 to-purple-400",
+      "Practice previous year questions and understand your university exam pattern.",
+    tag: "PYQ LIBRARY",
+  },
+  {
+    icon: BrainCircuit,
+    title: "AI Question Generator",
+    description:
+      "Generate subject-wise and unit-wise questions with the power of AI.",
+    tag: "AI POWERED",
   },
   {
     icon: Target,
-    title: "MCQ Practice",
+    title: "Smart MCQ Practice",
     description:
-      "Improve your preparation with topic-wise MCQs and instant performance feedback.",
-    color: "from-emerald-500 to-teal-400",
+      "Improve your accuracy with topic-wise MCQs and instant feedback.",
+    tag: "PRACTICE",
   },
   {
-    icon: ClipboardList,
-    title: "Mock Exams",
+    icon: GraduationCap,
+    title: "Mock Examinations",
     description:
-      "Experience timed tests and evaluate your preparation before the real examination.",
-    color: "from-orange-500 to-amber-400",
+      "Experience timed examinations and evaluate your preparation.",
+    tag: "EXAM READY",
   },
   {
-    icon: BookOpen,
-    title: "PYQ Preparation",
+    icon: ChartNoAxesCombined,
+    title: "Performance Tracking",
     description:
-      "Practice previous year questions and understand important examination patterns.",
-    color: "from-pink-500 to-rose-400",
-  },
-  {
-    icon: Layers3,
-    title: "Syllabus Management",
-    description:
-      "Organize your university, course, branch, semester and subjects in one place.",
-    color: "from-indigo-500 to-blue-400",
+      "Track your progress, identify weak topics and improve consistently.",
+    tag: "ANALYTICS",
   },
 ];
 
 const steps = [
   {
     number: "01",
-    title: "Choose Your Academic Profile",
+    title: "Choose your academic profile",
     description:
-      "Select your university, course, branch and semester to personalize your learning.",
+      "Select your university, course, branch and semester to get relevant study resources.",
+    icon: GraduationCap,
   },
   {
     number: "02",
-    title: "Explore Your Study Material",
+    title: "Explore learning resources",
     description:
-      "Access subjects, notes, MCQs, previous year questions and AI-powered tools.",
+      "Find notes, subjects, PYQs, MCQs and AI-generated exam questions.",
+    icon: Layers3,
   },
   {
     number: "03",
-    title: "Practice. Improve. Succeed.",
+    title: "Practice and improve",
     description:
-      "Attempt mock exams, track your performance and prepare with confidence.",
+      "Attempt mock exams, evaluate your performance and prepare smarter.",
+    icon: Trophy,
   },
 ];
 
@@ -91,65 +97,82 @@ export default function Home() {
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
-    <main className="min-h-screen overflow-hidden bg-[#06070b] text-white">
-      <nav className="fixed left-0 right-0 top-0 z-50 border-b border-white/[0.07] bg-[#06070b]/80 backdrop-blur-2xl">
-        <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-5 sm:px-8">
-          <Link href="/" className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-violet-600 shadow-lg shadow-blue-500/20">
+    <main className="min-h-screen overflow-hidden bg-[#05060a] text-white">
+      <div className="pointer-events-none fixed inset-0 z-0">
+        <div className="absolute -top-40 left-1/2 h-[500px] w-[700px] -translate-x-1/2 rounded-full bg-blue-600/10 blur-[140px]" />
+        <div className="absolute top-[900px] -left-40 h-[400px] w-[400px] rounded-full bg-cyan-500/10 blur-[130px]" />
+        <div className="absolute top-[1700px] right-0 h-[450px] w-[450px] rounded-full bg-violet-600/10 blur-[150px]" />
+      </div>
+
+      <nav className="sticky top-0 z-50 border-b border-white/[0.08] bg-[#05060a]/85 backdrop-blur-2xl">
+        <div className="mx-auto flex h-[76px] max-w-7xl items-center justify-between px-6 lg:px-10">
+          <Link href="/" className="flex items-center gap-2">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 shadow-lg shadow-blue-600/30">
               <GraduationCap className="h-6 w-6 text-white" />
             </div>
-            <span className="text-2xl font-black tracking-tight">
-              Sem<span className="text-blue-400">Shot</span>
+            <span className="text-2xl font-extrabold tracking-tight">
+              Sem<span className="text-blue-500">Shot</span>
             </span>
           </Link>
 
-          <div className="hidden items-center gap-9 md:flex">
-            <a href="#features" className="text-sm text-zinc-400 transition hover:text-white">Features</a>
-            <a href="#how-it-works" className="text-sm text-zinc-400 transition hover:text-white">How it works</a>
-            <a href="#about" className="text-sm text-zinc-400 transition hover:text-white">About</a>
+          <div className="hidden items-center gap-9 text-sm text-zinc-400 md:flex">
+            <a href="#features" className="transition hover:text-white">Features</a>
+            <a href="#how-it-works" className="transition hover:text-white">How it works</a>
+            <a href="#about" className="transition hover:text-white">About</a>
           </div>
 
           <div className="hidden items-center gap-3 md:flex">
-            <Link href="/login" className="rounded-xl px-5 py-2.5 text-sm font-semibold text-zinc-300 transition hover:bg-white/5 hover:text-white">
+            <Link
+              href="/login"
+              className="rounded-xl px-5 py-2.5 text-sm font-medium text-zinc-300 transition hover:bg-white/5 hover:text-white"
+            >
               Login
             </Link>
-            <Link href="/signup" className="group flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold shadow-lg shadow-blue-600/20 transition hover:-translate-y-0.5 hover:bg-blue-500">
+            <Link
+              href="/signup"
+              className="group flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold shadow-lg shadow-blue-600/20 transition hover:bg-blue-500"
+            >
               Get Started
-              <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
+              <ArrowUpRight className="h-4 w-4 transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
             </Link>
           </div>
 
-          <button onClick={() => setMenuOpen(!menuOpen)} className="rounded-lg border border-white/10 p-2 md:hidden" aria-label="Toggle menu">
+          <button
+            onClick={() => setMenuOpen(!menuOpen)}
+            className="rounded-xl border border-white/10 p-2 md:hidden"
+            aria-label="Toggle menu"
+          >
             {menuOpen ? <X /> : <Menu />}
           </button>
         </div>
 
         {menuOpen && (
-          <div className="border-t border-white/10 bg-[#090a10] p-5 md:hidden">
-            <div className="flex flex-col gap-5">
+          <div className="border-t border-white/10 bg-[#090b12] p-6 md:hidden">
+            <div className="flex flex-col gap-5 text-sm text-zinc-300">
               <a href="#features" onClick={() => setMenuOpen(false)}>Features</a>
               <a href="#how-it-works" onClick={() => setMenuOpen(false)}>How it works</a>
               <a href="#about" onClick={() => setMenuOpen(false)}>About</a>
               <Link href="/login">Login</Link>
-              <Link href="/signup" className="rounded-xl bg-blue-600 px-5 py-3 text-center font-semibold">Get Started</Link>
+              <Link href="/signup" className="rounded-xl bg-blue-600 px-5 py-3 text-center font-semibold">
+                Get Started
+              </Link>
             </div>
           </div>
         )}
       </nav>
 
-      <section className="relative px-5 pb-24 pt-40 sm:px-8 sm:pt-48">
-        <div className="pointer-events-none absolute left-1/2 top-10 h-[500px] w-[800px] -translate-x-1/2 rounded-full bg-blue-600/15 blur-[140px]" />
-        <div className="pointer-events-none absolute right-0 top-64 h-80 w-80 rounded-full bg-violet-600/10 blur-[120px]" />
-
-        <div className="relative mx-auto max-w-7xl">
-          <div className="mx-auto max-w-4xl text-center">
-            <div className="inline-flex animate-[fadeIn_0.8s_ease-out] items-center gap-2 rounded-full border border-blue-400/20 bg-blue-500/[0.08] px-5 py-2.5 text-sm text-blue-300">
+      <section className="relative z-10 mx-auto max-w-7xl px-6 pb-24 pt-24 lg:px-10 lg:pb-32 lg:pt-32">
+        <div className="grid items-center gap-16 lg:grid-cols-[1.05fr_0.95fr]">
+          <div>
+            <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-blue-500/30 bg-blue-500/10 px-4 py-2 text-sm text-blue-300">
               <Sparkles className="h-4 w-4" />
-              Your smarter way to prepare for exams
-              <ChevronRight className="h-4 w-4" />
+              AI-Powered Academic Preparation
+              <span className="rounded-full bg-blue-500/20 px-2 py-0.5 text-[10px] font-bold">
+                NEW
+              </span>
             </div>
 
-            <h1 className="mt-9 text-5xl font-black leading-[1.08] tracking-tight sm:text-6xl lg:text-8xl">
+            <h1 className="max-w-3xl text-5xl font-black leading-[1.08] tracking-tight sm:text-6xl lg:text-[76px]">
               Your Exams.
               <br />
               Your Preparation.
@@ -159,106 +182,123 @@ export default function Home() {
               </span>
             </h1>
 
-            <p className="mx-auto mt-8 max-w-2xl text-base leading-8 text-zinc-400 sm:text-lg">
-              Everything you need for university exam preparation — notes,
-              previous year questions, MCQs, mock tests and AI-powered learning.
-              All in one place.
+            <p className="mt-8 max-w-xl text-base leading-8 text-zinc-400 sm:text-lg">
+              Everything you need to prepare smarter. Access notes, PYQs,
+              MCQs, mock exams and AI-powered learning resources — all in
+              one platform.
             </p>
 
-            <div className="mt-10 flex flex-col justify-center gap-4 sm:flex-row">
-              <Link href="/signup" className="group flex items-center justify-center gap-3 rounded-xl bg-blue-600 px-8 py-4 font-bold shadow-xl shadow-blue-600/25 transition duration-300 hover:-translate-y-1 hover:bg-blue-500">
-                Start Learning Free
+            <div className="mt-10 flex flex-col gap-4 sm:flex-row">
+              <Link
+                href="/signup"
+                className="group flex items-center justify-center gap-3 rounded-xl bg-blue-600 px-7 py-4 font-bold shadow-xl shadow-blue-600/25 transition hover:-translate-y-1 hover:bg-blue-500"
+              >
+                Start Learning
                 <ArrowRight className="h-5 w-5 transition group-hover:translate-x-1" />
               </Link>
-              <a href="#features" className="flex items-center justify-center gap-3 rounded-xl border border-white/10 bg-white/[0.04] px-8 py-4 font-semibold text-zinc-200 transition hover:bg-white/[0.08]">
-                <Play className="h-4 w-4 text-blue-400" />
+
+              <a
+                href="#features"
+                className="flex items-center justify-center gap-3 rounded-xl border border-white/15 bg-white/[0.03] px-7 py-4 font-semibold text-zinc-200 transition hover:border-blue-500/50 hover:bg-white/[0.06]"
+              >
+                <Play className="h-4 w-4 fill-current" />
                 Explore Features
               </a>
             </div>
 
-            <div className="mt-8 flex flex-wrap items-center justify-center gap-x-7 gap-y-3 text-sm text-zinc-500">
-              <span className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-400" /> Personalized learning</span>
-              <span className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-400" /> Exam-focused preparation</span>
-              <span className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-400" /> One learning platform</span>
+            <div className="mt-12 flex flex-wrap items-center gap-6 text-sm text-zinc-500">
+              <span className="flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                Student focused
+              </span>
+              <span className="flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                AI powered
+              </span>
+              <span className="flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                All-in-one platform
+              </span>
             </div>
           </div>
 
-          <div className="relative mx-auto mt-24 max-w-5xl">
-            <div className="absolute -inset-5 rounded-[35px] bg-gradient-to-r from-blue-600/20 via-cyan-500/10 to-violet-600/20 blur-2xl" />
+          <div className="relative mx-auto w-full max-w-[540px]">
+            <div className="absolute -inset-8 rounded-full bg-blue-600/15 blur-[90px]" />
 
-            <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-[#10121a] shadow-2xl shadow-black/50">
-              <div className="flex items-center justify-between border-b border-white/[0.08] px-5 py-4">
-                <div className="flex items-center gap-2">
-                  <div className="h-3 w-3 rounded-full bg-red-400" />
-                  <div className="h-3 w-3 rounded-full bg-yellow-400" />
-                  <div className="h-3 w-3 rounded-full bg-green-400" />
+            <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-[#10131d] p-5 shadow-2xl shadow-blue-950/30 sm:p-7">
+              <div className="flex items-center justify-between border-b border-white/10 pb-5">
+                <div>
+                  <p className="text-sm font-bold">Student Dashboard</p>
+                  <p className="mt-1 text-xs text-zinc-500">Your learning space</p>
                 </div>
-                <span className="text-xs font-medium text-zinc-500">SEMSHOT / STUDENT DASHBOARD</span>
-                <Sparkles className="h-4 w-4 text-blue-400" />
+                <div className="rounded-xl bg-blue-500/10 p-3 text-blue-400">
+                  <GraduationCap className="h-6 w-6" />
+                </div>
               </div>
 
-              <div className="grid md:grid-cols-[210px_1fr]">
-                <aside className="hidden border-r border-white/[0.07] p-5 md:block">
-                  <div className="mb-9 flex items-center gap-2 text-lg font-bold">
-                    <GraduationCap className="text-blue-400" /> SemShot
-                  </div>
-                  {["Dashboard", "My Subjects", "Study Notes", "Practice MCQs", "Mock Exams"].map((item, index) => (
-                    <div key={item} className={`mb-2 flex items-center gap-3 rounded-lg px-3 py-3 text-xs ${index === 0 ? "bg-blue-500/15 text-blue-300" : "text-zinc-500"}`}>
-                      <span className="h-2 w-2 rounded-full bg-current" />
-                      {item}
-                    </div>
-                  ))}
-                </aside>
+              <div className="mt-6 rounded-2xl border border-blue-500/20 bg-gradient-to-br from-blue-600/20 to-violet-600/10 p-5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-blue-300">YOUR STUDY JOURNEY</span>
+                  <Sparkles className="h-5 w-5 text-blue-400" />
+                </div>
+                <h3 className="mt-4 text-2xl font-bold">Prepare Smarter.</h3>
+                <p className="mt-2 text-sm leading-6 text-zinc-400">
+                  Your academic resources, organized in one place.
+                </p>
+                <div className="mt-5 flex items-center gap-2 text-sm font-semibold text-blue-300">
+                  Explore your dashboard <ArrowRight className="h-4 w-4" />
+                </div>
+              </div>
 
-                <div className="p-5 sm:p-8">
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                      <p className="text-xs text-zinc-500">WELCOME TO YOUR LEARNING SPACE</p>
-                      <h3 className="mt-2 text-xl font-bold sm:text-2xl">Your preparation starts here.</h3>
-                    </div>
-                    <div className="rounded-xl border border-blue-500/20 bg-blue-500/10 px-4 py-2 text-xs text-blue-300">
-                      <Sparkles className="mr-2 inline h-4 w-4" /> AI Powered
-                    </div>
+              <div className="mt-6 grid grid-cols-2 gap-3">
+                {[
+                  { icon: BookOpen, label: "Study Notes", value: "Learn" },
+                  { icon: FileText, label: "Previous Papers", value: "Practice" },
+                  { icon: BrainCircuit, label: "AI Questions", value: "Generate" },
+                  { icon: Target, label: "Mock Exams", value: "Evaluate" },
+                ].map((item) => (
+                  <div
+                    key={item.label}
+                    className="rounded-2xl border border-white/[0.08] bg-white/[0.025] p-4 transition hover:border-blue-500/40 hover:bg-blue-500/[0.06]"
+                  >
+                    <item.icon className="h-5 w-5 text-blue-400" />
+                    <p className="mt-4 text-sm font-semibold">{item.label}</p>
+                    <p className="mt-1 text-xs text-zinc-500">{item.value}</p>
                   </div>
+                ))}
+              </div>
 
-                  <div className="mt-8 grid grid-cols-2 gap-3 lg:grid-cols-4">
-                    {[
-                      ["Subjects", "Explore", BookOpen],
-                      ["Study Notes", "Organized", FileText],
-                      ["Practice", "Improve", Target],
-                      ["Mock Exams", "Evaluate", Trophy],
-                    ].map(([title, subtitle, Icon]) => {
-                      const FeatureIcon = Icon as typeof BookOpen;
-                      return (
-                        <div key={title as string} className="rounded-xl border border-white/[0.08] bg-white/[0.025] p-4">
-                          <FeatureIcon className="h-5 w-5 text-blue-400" />
-                          <p className="mt-5 text-sm font-semibold">{title as string}</p>
-                          <p className="mt-1 text-xs text-zinc-500">{subtitle as string}</p>
-                        </div>
-                      );
-                    })}
-                  </div>
+              <div className="mt-5 flex items-center gap-3 rounded-2xl border border-white/[0.08] bg-white/[0.025] p-4">
+                <div className="rounded-xl bg-emerald-500/10 p-3 text-emerald-400">
+                  <ShieldCheck className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold">One platform. Everything organized.</p>
+                  <p className="mt-1 text-xs text-zinc-500">Built for university students.</p>
+                </div>
+              </div>
+            </div>
 
-                  <div className="mt-5 grid gap-4 sm:grid-cols-2">
-                    <div className="rounded-xl border border-white/[0.08] bg-white/[0.025] p-5">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-semibold">Study smarter</span>
-                        <Brain className="h-5 w-5 text-violet-400" />
-                      </div>
-                      <div className="mt-5 h-2 rounded-full bg-white/10">
-                        <div className="h-2 w-3/4 rounded-full bg-gradient-to-r from-blue-500 to-violet-500" />
-                      </div>
-                      <p className="mt-3 text-xs text-zinc-500">Build a consistent study routine.</p>
-                    </div>
-                    <div className="rounded-xl border border-white/[0.08] bg-gradient-to-br from-blue-600/15 to-violet-600/10 p-5">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-semibold">AI Exam Engine</span>
-                        <Zap className="h-5 w-5 text-yellow-400" />
-                      </div>
-                      <p className="mt-3 text-xs leading-6 text-zinc-400">Practice with questions based on your syllabus.</p>
-                      <span className="mt-3 inline-flex items-center gap-2 text-xs font-semibold text-blue-300">Explore SemShot <ArrowRight className="h-3 w-3" /></span>
-                    </div>
-                  </div>
+            <div className="absolute -right-4 top-16 hidden rounded-2xl border border-white/10 bg-[#151925] p-4 shadow-xl sm:block">
+              <div className="flex items-center gap-3">
+                <div className="rounded-xl bg-violet-500/15 p-2 text-violet-400">
+                  <Zap className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold">AI Powered</p>
+                  <p className="text-[10px] text-zinc-500">Smarter preparation</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="absolute -bottom-5 -left-5 hidden rounded-2xl border border-white/10 bg-[#151925] p-4 shadow-xl sm:block">
+              <div className="flex items-center gap-3">
+                <div className="rounded-xl bg-emerald-500/15 p-2 text-emerald-400">
+                  <Clock3 className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold">Study Efficiently</p>
+                  <p className="text-[10px] text-zinc-500">Make every session count</p>
                 </div>
               </div>
             </div>
@@ -266,88 +306,167 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="features" className="relative border-t border-white/[0.06] px-5 py-28 sm:px-8">
-        <div className="mx-auto max-w-7xl">
+      <section className="relative z-10 border-y border-white/[0.07] bg-white/[0.015] py-9">
+        <div className="mx-auto grid max-w-7xl grid-cols-2 gap-8 px-6 text-center sm:grid-cols-4 lg:px-10">
+          {[
+            ["01", "Academic Profile"],
+            ["02", "Study Resources"],
+            ["03", "AI Learning"],
+            ["04", "Exam Practice"],
+          ].map(([number, label]) => (
+            <div key={label}>
+              <p className="text-2xl font-black text-blue-400">{number}</p>
+              <p className="mt-2 text-sm text-zinc-400">{label}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section id="features" className="relative z-10 mx-auto max-w-7xl px-6 py-28 lg:px-10">
+        <div className="mx-auto max-w-2xl text-center">
+          <span className="text-sm font-bold uppercase tracking-[0.2em] text-blue-400">
+            Everything in one place
+          </span>
+          <h2 className="mt-5 text-4xl font-black tracking-tight sm:text-5xl">
+            One Platform.
+            <br />
+            <span className="text-zinc-500">Multiple Possibilities.</span>
+          </h2>
+          <p className="mt-6 leading-7 text-zinc-400">
+            Stop switching between different resources. Get the tools you
+            need for your university exam preparation.
+          </p>
+        </div>
+
+        <div className="mt-16 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {features.map((feature, index) => (
+            <div
+              key={feature.title}
+              className="group relative overflow-hidden rounded-2xl border border-white/[0.09] bg-[#0c0e15] p-7 transition duration-300 hover:-translate-y-2 hover:border-blue-500/40 hover:bg-[#101522]"
+            >
+              <div className="absolute right-0 top-0 h-32 w-32 rounded-full bg-blue-500/[0.04] blur-3xl transition group-hover:bg-blue-500/15" />
+
+              <div className="relative flex items-center justify-between">
+                <div className="rounded-xl border border-blue-500/20 bg-blue-500/10 p-3 text-blue-400 transition group-hover:bg-blue-600 group-hover:text-white">
+                  <feature.icon className="h-6 w-6" />
+                </div>
+                <span className="text-[10px] font-bold tracking-widest text-zinc-600">
+                  0{index + 1}
+                </span>
+              </div>
+
+              <p className="mt-7 text-[10px] font-bold tracking-[0.18em] text-blue-400">
+                {feature.tag}
+              </p>
+              <h3 className="mt-3 text-xl font-bold">{feature.title}</h3>
+              <p className="mt-3 min-h-[72px] text-sm leading-6 text-zinc-500">
+                {feature.description}
+              </p>
+
+              <div className="mt-6 flex items-center gap-2 text-sm font-semibold text-zinc-400 transition group-hover:text-blue-400">
+                Explore feature
+                <ChevronRight className="h-4 w-4 transition group-hover:translate-x-1" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section id="how-it-works" className="relative z-10 border-y border-white/[0.07] bg-[#090b12] py-28">
+        <div className="mx-auto max-w-7xl px-6 lg:px-10">
           <div className="mx-auto max-w-2xl text-center">
-            <span className="text-sm font-bold uppercase tracking-[0.25em] text-blue-400">Everything in one place</span>
-            <h2 className="mt-5 text-4xl font-black tracking-tight sm:text-5xl">
-              One platform. <span className="text-blue-400">Every advantage.</span>
+            <span className="text-sm font-bold uppercase tracking-[0.2em] text-blue-400">
+              Simple process
+            </span>
+            <h2 className="mt-5 text-4xl font-black sm:text-5xl">
+              How SemShot Works
             </h2>
-            <p className="mt-5 leading-7 text-zinc-400">A complete toolkit designed to make university exam preparation more organized and effective.</p>
+            <p className="mt-5 leading-7 text-zinc-400">
+              Start your academic preparation in three simple steps.
+            </p>
           </div>
 
-          <div className="mt-16 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {features.map((feature, index) => {
-              const Icon = feature.icon;
-              return (
-                <div key={feature.title} className="group rounded-2xl border border-white/[0.08] bg-white/[0.025] p-7 transition duration-500 hover:-translate-y-2 hover:border-blue-500/30 hover:bg-white/[0.045]">
-                  <div className={`flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br ${feature.color} shadow-lg transition duration-500 group-hover:rotate-6 group-hover:scale-110`}>
-                    <Icon className="h-7 w-7 text-white" />
+          <div className="mt-16 grid gap-6 md:grid-cols-3">
+            {steps.map((step) => (
+              <div
+                key={step.number}
+                className="relative rounded-2xl border border-white/10 bg-white/[0.025] p-8 transition hover:border-blue-500/40"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-4xl font-black text-white/10">
+                    {step.number}
+                  </span>
+                  <div className="rounded-xl bg-blue-500/10 p-3 text-blue-400">
+                    <step.icon className="h-6 w-6" />
                   </div>
-                  <span className="mt-7 block text-xs font-bold tracking-widest text-zinc-600">0{index + 1}</span>
-                  <h3 className="mt-2 text-xl font-bold">{feature.title}</h3>
-                  <p className="mt-3 text-sm leading-7 text-zinc-400">{feature.description}</p>
-                  <div className="mt-6 flex items-center gap-2 text-sm font-semibold text-blue-400">Explore feature <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" /></div>
                 </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      <section id="how-it-works" className="border-t border-white/[0.06] bg-[#090b12] px-5 py-28 sm:px-8">
-        <div className="mx-auto max-w-7xl">
-          <div className="text-center">
-            <span className="text-sm font-bold uppercase tracking-[0.25em] text-blue-400">Simple process</span>
-            <h2 className="mt-5 text-4xl font-black sm:text-5xl">Get started in <span className="text-blue-400">3 steps.</span></h2>
-          </div>
-
-          <div className="mt-16 grid gap-8 md:grid-cols-3">
-            {steps.map((step, index) => (
-              <div key={step.number} className="relative rounded-2xl border border-white/[0.08] bg-white/[0.025] p-8">
-                <div className="text-5xl font-black text-blue-500/30">{step.number}</div>
-                <h3 className="mt-7 text-xl font-bold">{step.title}</h3>
-                <p className="mt-4 text-sm leading-7 text-zinc-400">{step.description}</p>
-                {index !== 2 && <ArrowRight className="absolute right-7 top-10 hidden h-5 w-5 text-blue-400/50 md:block" />}
+                <h3 className="mt-8 text-xl font-bold">{step.title}</h3>
+                <p className="mt-4 text-sm leading-7 text-zinc-500">
+                  {step.description}
+                </p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      <section id="about" className="px-5 py-28 sm:px-8">
-        <div className="relative mx-auto max-w-6xl overflow-hidden rounded-3xl border border-blue-400/20 bg-gradient-to-br from-blue-950/60 via-[#111321] to-violet-950/50 px-7 py-16 text-center sm:px-16">
-          <div className="pointer-events-none absolute left-1/2 top-0 h-64 w-96 -translate-x-1/2 rounded-full bg-blue-500/20 blur-[100px]" />
-          <div className="relative">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl border border-blue-400/20 bg-blue-500/10">
-              <GraduationCap className="h-9 w-9 text-blue-300" />
+      <section id="about" className="relative z-10 mx-auto max-w-7xl px-6 py-28 lg:px-10">
+        <div className="relative overflow-hidden rounded-[32px] border border-blue-500/20 bg-gradient-to-br from-[#111b35] via-[#101323] to-[#17102c] p-8 sm:p-14 lg:p-20">
+          <div className="absolute -right-20 -top-32 h-96 w-96 rounded-full border border-blue-400/10" />
+          <div className="absolute -right-10 -top-20 h-72 w-72 rounded-full border border-blue-400/10" />
+
+          <div className="relative max-w-3xl">
+            <div className="inline-flex items-center gap-2 rounded-full border border-blue-400/20 bg-blue-400/10 px-4 py-2 text-sm text-blue-300">
+              <BrainCircuit className="h-4 w-4" />
+              The smarter way to prepare
             </div>
-            <h2 className="mx-auto mt-8 max-w-3xl text-4xl font-black leading-tight sm:text-6xl">
-              Make every study session <span className="text-blue-300">count.</span>
+
+            <h2 className="mt-8 text-4xl font-black leading-tight sm:text-6xl">
+              Don't just study hard.
+              <br />
+              <span className="text-blue-400">Study smart.</span>
             </h2>
-            <p className="mx-auto mt-6 max-w-xl leading-8 text-zinc-400">
-              Your next semester deserves a smarter preparation strategy. Start organizing your learning with SemShot.
+
+            <p className="mt-6 max-w-2xl text-base leading-8 text-zinc-400">
+              Your academic journey deserves better tools. Bring your study
+              materials, practice sessions and exam preparation together with
+              SemShot.
             </p>
-            <Link href="/signup" className="mt-9 inline-flex items-center gap-3 rounded-xl bg-blue-600 px-8 py-4 font-bold shadow-xl shadow-blue-600/20 transition hover:-translate-y-1 hover:bg-blue-500">
-              Get Started Now <ArrowRight className="h-5 w-5" />
+
+            <Link
+              href="/signup"
+              className="mt-9 inline-flex items-center gap-3 rounded-xl bg-blue-600 px-7 py-4 font-bold shadow-xl shadow-blue-600/20 transition hover:-translate-y-1 hover:bg-blue-500"
+            >
+              Get Started for Free
+              <ArrowRight className="h-5 w-5" />
             </Link>
           </div>
         </div>
       </section>
 
-      <footer className="border-t border-white/[0.07] px-5 py-10 sm:px-8">
-        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-6 sm:flex-row">
-          <Link href="/" className="flex items-center gap-2 text-xl font-black">
-            <GraduationCap className="h-6 w-6 text-blue-400" />
-            Sem<span className="text-blue-400">Shot</span>
-          </Link>
-          <p className="text-center text-sm text-zinc-500">Learn smarter. Prepare better. Achieve more.</p>
-          <div className="flex gap-6 text-sm text-zinc-500">
+      <footer className="relative z-10 border-t border-white/[0.08] bg-[#07080d]">
+        <div className="mx-auto flex max-w-7xl flex-col justify-between gap-10 px-6 py-12 md:flex-row md:items-center lg:px-10">
+          <div>
+            <Link href="/" className="text-2xl font-black">
+              Sem<span className="text-blue-500">Shot</span>
+            </Link>
+            <p className="mt-3 max-w-sm text-sm leading-6 text-zinc-500">
+              Your all-in-one academic preparation platform. Learn better,
+              practice smarter and prepare with confidence.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-7 text-sm text-zinc-400">
+            <a href="#features" className="transition hover:text-white">Features</a>
+            <a href="#how-it-works" className="transition hover:text-white">How it works</a>
             <Link href="/login" className="transition hover:text-white">Login</Link>
             <Link href="/signup" className="transition hover:text-white">Sign Up</Link>
           </div>
         </div>
-        <p className="mt-8 text-center text-xs text-zinc-700">© {new Date().getFullYear()} SemShot. All rights reserved.</p>
+
+        <div className="border-t border-white/[0.07] px-6 py-6 text-center text-xs text-zinc-600">
+          © {new Date().getFullYear()} SemShot. All rights reserved.
+        </div>
       </footer>
     </main>
   );

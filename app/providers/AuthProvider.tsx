@@ -43,31 +43,30 @@ export default function AuthProvider({
   const [profileCompleted, setProfileCompleted] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(
-      auth,
-      async (currentUser) => {
-        setUser(currentUser);
+    let active = true;
 
-        if (!currentUser) {
-          setProfile(null);
-          setProfileCompleted(false);
-          setProfileLoading(false);
-          setLoading(false);
-          return;
-        }
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      if (!active) return;
 
-        setProfileLoading(true);
+      setUser(currentUser);
+      setProfile(null);
+      setProfileCompleted(false);
 
-        try {
-          const userRef = doc(db, "users", currentUser.uid);
-          const userSnap = await getDoc(userRef);
+      if (!currentUser) {
+        setProfileLoading(false);
+        setLoading(false);
+        return;
+      }
 
-          if (!userSnap.exists()) {
-            setProfile(null);
-            setProfileCompleted(false);
-            return;
-          }
+      setProfileLoading(true);
 
+      try {
+        const userRef = doc(db, "users", currentUser.uid);
+        const userSnap = await getDoc(userRef);
+
+        if (!active) return;
+
+        if (userSnap.exists()) {
           const userData = userSnap.data() as UserProfile;
 
           setProfile(userData);
@@ -80,19 +79,25 @@ export default function AuthProvider({
             !!userData.semesterId;
 
           setProfileCompleted(completed);
-        } catch (error) {
-          console.error("Error loading user profile:", error);
+        }
+      } catch (error) {
+        if (!active) return;
 
-          setProfile(null);
-          setProfileCompleted(false);
-        } finally {
+        console.error("Error loading user profile:", error);
+        setProfile(null);
+        setProfileCompleted(false);
+      } finally {
+        if (active) {
           setProfileLoading(false);
           setLoading(false);
         }
       }
-    );
+    });
 
-    return unsubscribe;
+    return () => {
+      active = false;
+      unsubscribe();
+    };
   }, []);
 
   return (

@@ -103,26 +103,34 @@ export default function DashboardLayout({
   const [loggingOut, setLoggingOut] = useState(false);
 
   useEffect(() => {
-    if (loading || profileLoading) {
-      return;
-    }
-
-    if (!user) {
-      router.replace("/login");
-      return;
-    }
-
-    if (!profileCompleted) {
-      router.replace("/onboarding");
-    }
-  }, [
-    user,
+  console.log("DASHBOARD AUTH CHECK:", {
+    user: user?.email,
+    uid: user?.uid,
     loading,
     profileLoading,
     profileCompleted,
-    router,
-    pathname,
-  ]);
+    profile
+  });
+
+  if (loading || profileLoading) return;
+
+  if (!user) {
+    router.replace("/login");
+    return;
+  }
+
+  if (!profileCompleted) {
+    router.replace("/onboarding");
+  }
+}, [
+  user,
+  loading,
+  profileLoading,
+  profileCompleted,
+  profile,
+  router,
+  pathname,
+]);
 
   useEffect(() => {
     setMobileOpen(false);

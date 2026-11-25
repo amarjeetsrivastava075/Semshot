@@ -746,17 +746,21 @@ Practice Test:
       setGenerating(false);
     }
   }
-    function startExam() {
-    if (!exam || exam.questions.length === 0) {
-      return;
-    }
+    function startExam(event?: React.MouseEvent<HTMLButtonElement>) {
+  event?.preventDefault();
 
-    setAnswers({});
-    setCurrentQuestion(0);
-    setSubmitted(false);
-    setTimeLeft(duration * 60);
-    setStarted(true);
+  if (!exam || exam.questions.length === 0) {
+    setGenerationError("No questions available. Please generate the exam again.");
+    return;
   }
+
+  setAnswers({});
+  setCurrentQuestion(0);
+  setSubmitted(false);
+  setTimeLeft(duration * 60);
+  setGenerationError("");
+  setStarted(true);
+}
 
   function chooseAnswer(optionIndex: number) {
     if (submitted) return;
@@ -1027,7 +1031,8 @@ Practice Test:
 
               <div className="mt-7 flex flex-wrap justify-center gap-3">
                 <button
-                  onClick={startExam}
+  type="button"
+  onClick={startExam}
                   className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.05] px-5 py-3 font-medium transition hover:bg-white/[0.1]"
                 >
                   <RotateCcw className="h-4 w-4" />
@@ -1197,7 +1202,8 @@ Practice Test:
             )}
 
             <button
-              onClick={startExam}
+  type="button"
+  onClick={startExam}
               className="mt-8 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-3.5 font-semibold transition hover:bg-blue-500"
             >
               <Play className="h-4 w-4 fill-current" />
@@ -1702,7 +1708,8 @@ Practice Test:
               </div>
 
               <button
-                onClick={generateExam}
+  type="button"
+  onClick={generateExam}
                 disabled={
                   generating ||
                   !subject ||

@@ -6,9 +6,12 @@ if (!apiKey) {
   throw new Error("GEMINI_API_KEY is missing");
 }
 
-const ai = new GoogleGenAI({
-  apiKey,
-});
+const ai = new GoogleGenAI({ apiKey });
+
+const MODELS = [
+  "gemini-3.8-flash",
+  "gemini-3.5-flash-lite",
+];
 
 export type GenerateQuestionInput = {
   course: string;
@@ -32,11 +35,31 @@ export type GeneratedQuestion = {
   marks: number;
 };
 
+const wait = (ms: number) =>
+  new Promise((resolve) => setTimeout(resolve, ms));
+
+function isTemporaryError(error: unknown) {
+  const err = error as {
+    status?: number;
+    code?: number | string;
+    message?: string;
+  };
+
+  const status = Number(err.status || err.code);
+
+  return (
+    [408, 429, 500, 502, 503, 504].includes(status) ||
+    /high demand|overloaded|unavailable|rate limit|resource exhausted/i.test(
+      err.message || ""
+    )
+  );
+}
+
 export async function generateQuestions(
   input: GenerateQuestionInput
 ): Promise<GeneratedQuestion[]> {
   const prompt = `
-You are the official AI question generator for SemShot, an academic examination platform.
+You are the official AI question generator for SemShot.
 
 Generate exactly ${input.count} multiple-choice questions.
 
@@ -56,48 +79,101 @@ Difficulty: ${input.difficulty}
 RULES
 
 1. Generate exactly ${input.count} questions.
-2. Every question must belong to the selected subject.
-3. Every question must be related to the provided syllabus units.
-4. Do not generate questions outside the syllabus.
-5. Every question must have exactly 4 options.
-6. There must be exactly one correct answer.
-7. The answer must be represented as an index from 0 to 3.
-8. Provide a clear explanation for the correct answer.
-9. Provide the difficulty.
-10. Provide the relevant topic/unit.
-11. Avoid duplicate questions.
-12. Avoid ambiguous questions.
-13. Questions should be suitable for university examinations.
-14. Do not mention that you are an AI.
-15. Return only valid JSON.
+2. Questions must belong to the selected subject.
+3. Questions must follow the provided syllabus.
+4. Every question must have exactly 4 options.
+5. Only one correct answer.
+6. Answer must be an index from 0 to 3.
+7. Include a clear explanation.
+8. Include difficulty and relevant topic.
+9. Avoid duplicate and ambiguous questions.
+10. Questions must be suitable for university examinations.
+11. Return only valid JSON in this exact structure:
+
+{
+  "questions": [
+    {
+      "id": "q1",
+      "question": "Question text",
+      "options": ["Option A", "Option B", "Option C", "Option D"],
+      "answer": 0,
+      "explanation": "Explanation",
+      "difficulty": "medium",
+      "topic": "Unit 1",
+      "marks": 1
+    }
+  ]
+}
 `;
 
-  const response = await ai.models.generateContent({
-    model: "gemini-3.6-flash",
-    contents: prompt,
-    config: {
-      responseMimeType: "application/json",
-    },
-  });
+  let lastError: unknown;
 
-  if (!response.text) {
-    throw new Error("Gemini returned an empty response");
+  for (const model of MODELS) {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const response = await ai.models.generateContent({
+          model,
+          contents: prompt,
+          config: {
+            responseMimeType: "application/json",
+          },
+        });
+
+        if (!response.text) {
+          throw new Error("Gemini returned an empty response");
+        }
+
+        const parsed = JSON.parse(response.text);
+
+        if (
+          !Array.isArray(parsed.questions) ||
+          parsed.questions.length !== input.count
+        ) {
+          throw new Error("Invalid question format returned by Gemini");
+        }
+
+        return parsed.questions.map(
+          (question: any, index: number): GeneratedQuestion => {
+            if (
+              typeof question.question !== "string" ||
+              !Array.isArray(question.options) ||
+              question.options.length !== 4 ||
+              !Number.isInteger(Number(question.answer)) ||
+              Number(question.answer) < 0 ||
+              Number(question.answer) > 3
+            ) {
+              throw new Error(`Invalid question data at index ${index}`);
+            }
+
+            return {
+              id: question.id || `ai-question-${index + 1}`,
+              question: question.question,
+              options: question.options.map(String),
+              answer: Number(question.answer),
+              explanation: question.explanation || "",
+              difficulty: question.difficulty || "medium",
+              topic: question.topic || input.subject,
+              marks: Number(question.marks || 1),
+            };
+          }
+        );
+      } catch (error) {
+        lastError = error;
+
+        if (!isTemporaryError(error)) {
+          throw error;
+        }
+
+        if (attempt === 0) {
+          await wait(1500);
+        }
+      }
+    }
   }
 
-  const parsed = JSON.parse(response.text);
+  console.error("All Gemini models failed:", lastError);
 
-  if (!Array.isArray(parsed.questions)) {
-    throw new Error("Invalid question format returned by Gemini");
-  }
-
-  return parsed.questions.map((question: any, index: number) => ({
-    id: question.id || `ai-question-${index + 1}`,
-    question: question.question,
-    options: question.options,
-    answer: Number(question.answer),
-    explanation: question.explanation,
-    difficulty: question.difficulty || "medium",
-    topic: question.topic || input.subject,
-    marks: Number(question.marks || 1),
-  }));
+  throw new Error(
+    "AI exam generation is temporarily unavailable. Please try again in a minute."
+  );
 }

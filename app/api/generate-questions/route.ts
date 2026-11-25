@@ -1,16 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenAI } from "@google/genai";
 
+export const maxDuration = 60;
+
+const sleep = (ms: number) =>
+  new Promise((resolve) => setTimeout(resolve, ms));
+
 export async function POST(request: NextRequest) {
   try {
     const apiKey = process.env.GEMINI_API_KEY;
 
     if (!apiKey) {
       return NextResponse.json(
-        {
-          success: false,
-          error: "GEMINI_API_KEY is missing in .env.local",
-        },
+        { success: false, error: "GEMINI_API_KEY is missing in Vercel environment variables." },
         { status: 500 }
       );
     }
@@ -26,70 +28,65 @@ export async function POST(request: NextRequest) {
       difficulty,
       questionType,
       examPattern,
+      examMode,
     } = body;
 
     if (!subjectName) {
       return NextResponse.json(
-        {
-          success: false,
-          error: "Subject name is required",
-        },
+        { success: false, error: "Subject name is required." },
         { status: 400 }
       );
     }
 
     const units =
-      Array.isArray(selectedUnits) && selectedUnits.length > 0
+      Array.isArray(selectedUnits) && selectedUnits.length
         ? selectedUnits
         : Array.isArray(syllabus)
           ? syllabus
           : [];
 
-    const ai = new GoogleGenAI({
-      apiKey,
-    });
+    if (!units.length) {
+      return NextResponse.json(
+        { success: false, error: "Please select at least one syllabus unit." },
+        { status: 400 }
+      );
+    }
 
-    const count = Number(questionCount) || 10;
+    const mode = String(examMode || "practice").toLowerCase();
 
-    const prompt = `
-You are an expert university examination paper generator for an AI exam preparation platform called SemShot.
+    const isMST = mode === "mst";
+    const isEndSem = mode === "endsem" || mode === "end_sem";
+    const isDescriptive = isMST || isEndSem;
 
-Generate a high-quality exam for the following subject.
+    const count = isMST
+      ? 7
+      : Math.min(Math.max(Number(questionCount) || 10, 5), 50);
 
-Subject: ${subjectName}
-Subject Code: ${subjectCode || "Not provided"}
+    const marksInstruction = isMST
+      ? "Questions 1-5 must carry 2 marks each. Questions 6-7 must carry 5 marks each. Total marks: 20."
+      : isEndSem
+        ? "Generate descriptive university examination questions with suitable marks according to the provided exam pattern."
+        : "Generate multiple-choice questions with exactly four options and one correct answer.";
 
-Syllabus:
-${
-  units.length > 0
-    ? units.map((unit: string, index: number) => `${index + 1}. ${unit}`).join("\n")
-    : "Use the subject name and generate questions from standard university-level topics."
-}
-
-Question Count: ${count}
-Difficulty: ${difficulty || "Medium"}
-Question Type: ${questionType || "MCQ"}
-
-Exam Pattern:
-${examPattern || "General university examination pattern"}
-
-IMPORTANT RULES:
-
-1. Generate exactly ${count} questions.
-2. Questions must be academically accurate.
-3. Avoid duplicate questions.
-4. Cover different syllabus topics where possible.
-5. Every MCQ must have exactly 4 options.
-6. Only one option must be correct.
-7. The answer must be the zero-based option index.
-8. Include a clear explanation.
-9. Return ONLY valid JSON.
-10. Do not use markdown.
-11. Do not use triple backticks.
-12. Do not add any text before or after the JSON.
-
-Return exactly this structure:
-
+    const outputFormat = isDescriptive
+      ? `
+{
+  "success": true,
+  "subject": "${subjectName}",
+  "questions": [
+    {
+      "id": "q1",
+      "question": "Descriptive question text",
+      "options": [],
+      "answerText": "Expected answer or key points",
+      "explanation": "Answer explanation",
+      "unit": "Unit name",
+      "difficulty": "medium",
+      "marks": 2
+    }
+  ]
+}`
+      : `
 {
   "success": true,
   "subject": "${subjectName}",
@@ -97,95 +94,189 @@ Return exactly this structure:
     {
       "id": "q1",
       "question": "Question text",
-      "options": [
-        "Option A",
-        "Option B",
-        "Option C",
-        "Option D"
-      ],
+      "options": ["Option A", "Option B", "Option C", "Option D"],
       "answer": 0,
-      "explanation": "Explanation of the correct answer",
-      "unit": "Unit/topic name",
-      "difficulty": "${difficulty || "Medium"}"
+      "explanation": "Correct answer explanation",
+      "unit": "Unit name",
+      "difficulty": "medium",
+      "marks": 1
     }
   ]
-}
+}`;
+
+    const prompt = `
+You are SemShot, an expert university examination paper generator.
+
+Generate exactly ${count} questions.
+
+SUBJECT DETAILS
+Subject: ${subjectName}
+Subject Code: ${subjectCode || "Not provided"}
+
+SELECTED SYLLABUS:
+${units.map((unit: string, index: number) => `${index + 1}. ${unit}`).join("\n")}
+
+EXAM MODE: ${isMST ? "MST" : isEndSem ? "END SEMESTER" : "PRACTICE"}
+DIFFICULTY: ${difficulty || "medium"}
+QUESTION TYPE: ${isDescriptive ? "Descriptive" : questionType || "MCQ"}
+
+EXAM PATTERN:
+${examPattern || "Standard university examination pattern"}
+
+IMPORTANT INSTRUCTIONS:
+
+1. Generate exactly ${count} questions.
+2. Every question must be based on the selected syllabus.
+3. Do not generate duplicate questions.
+4. Maintain university examination quality.
+5. Cover different selected units.
+6. ${marksInstruction}
+7. ${isDescriptive
+        ? "Do not generate MCQ options. Keep options as an empty array. Include answerText and marks for every question."
+        : "Every question must have exactly 4 options. The answer must be a zero-based index from 0 to 3."
+      }
+8. Include a relevant unit and difficulty.
+9. Return only valid JSON.
+10. Do not include markdown or additional text.
+
+REQUIRED JSON STRUCTURE:
+${outputFormat}
 `;
 
-    console.log("Generating exam for:", subjectName);
+    const ai = new GoogleGenAI({ apiKey });
 
-    const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
-      contents: prompt,
-    });
+    let responseText = "";
+    let lastError: unknown;
 
-    const text = response.text || "";
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        const response = await ai.models.generateContent({
+          model: "gemini-2.5-flash",
+          contents: prompt,
+          config: {
+            responseMimeType: "application/json",
+            temperature: 0.4,
+          },
+        });
 
-    console.log("Gemini response received:", text.slice(0, 300));
+        responseText = response.text || "";
 
-    const cleaned = text
-      .replace(/```json/gi, "")
-      .replace(/```/g, "")
-      .trim();
+        if (responseText.trim()) {
+          break;
+        }
 
-    if (!cleaned) {
+        throw new Error("Gemini returned an empty response.");
+      } catch (error: any) {
+        lastError = error;
+
+        const message = String(
+          error?.message || error
+        ).toLowerCase();
+
+        const retryable =
+          message.includes("503") ||
+          message.includes("429") ||
+          message.includes("unavailable") ||
+          message.includes("high demand") ||
+          message.includes("overloaded") ||
+          message.includes("resource exhausted");
+
+        if (!retryable || attempt === 3) {
+          break;
+        }
+
+        await sleep(attempt * 1200);
+      }
+    }
+
+    if (!responseText.trim()) {
+      const message =
+        lastError instanceof Error
+          ? lastError.message
+          : "Gemini could not generate the exam.";
+
       return NextResponse.json(
         {
           success: false,
-          error: "Gemini returned an empty response",
+          error: message,
         },
-        { status: 500 }
+        { status: 503 }
       );
     }
 
     let exam;
 
     try {
-      exam = JSON.parse(cleaned);
+      exam = JSON.parse(responseText);
     } catch {
-      const start = cleaned.indexOf("{");
-      const end = cleaned.lastIndexOf("}");
-
-      if (start === -1 || end === -1) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: "Gemini returned invalid JSON",
-            raw: cleaned.slice(0, 1000),
-          },
-          { status: 500 }
-        );
-      }
-
-      try {
-        exam = JSON.parse(cleaned.slice(start, end + 1));
-      } catch {
-        return NextResponse.json(
-          {
-            success: false,
-            error: "Could not parse Gemini response as JSON",
-            raw: cleaned.slice(0, 1000),
-          },
-          { status: 500 }
-        );
-      }
-    }
-
-    if (!exam || !Array.isArray(exam.questions)) {
       return NextResponse.json(
         {
           success: false,
-          error: "Gemini response does not contain valid questions",
-          raw: cleaned.slice(0, 1000),
+          error: "Gemini returned invalid JSON. Please try again.",
         },
-        { status: 500 }
+        { status: 502 }
+      );
+    }
+
+    if (!Array.isArray(exam?.questions) || exam.questions.length === 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "No valid questions were generated.",
+        },
+        { status: 502 }
+      );
+    }
+
+    const questions = exam.questions.map((question: any, index: number) => ({
+      id: String(question.id || `q${index + 1}`),
+      question: String(question.question || ""),
+      options: isDescriptive
+        ? []
+        : Array.isArray(question.options)
+          ? question.options.map((option: any) => String(option))
+          : [],
+      answer: isDescriptive ? undefined : Number(question.answer),
+      answerText: String(question.answerText || ""),
+      explanation: String(question.explanation || ""),
+      unit: String(question.unit || ""),
+      difficulty: String(question.difficulty || difficulty || "medium"),
+      marks: Number(
+        question.marks || (isMST ? (index < 5 ? 2 : 5) : 1)
+      ),
+    }));
+
+    const validQuestions = questions.filter((question: any) => {
+      if (!question.question) return false;
+
+      if (isDescriptive) return true;
+
+      return (
+        question.options.length === 4 &&
+        Number.isInteger(question.answer) &&
+        question.answer >= 0 &&
+        question.answer <= 3
+      );
+    });
+
+    if (validQuestions.length === 0) {
+      return NextResponse.json(
+        { success: false, error: "Generated questions were invalid. Please retry." },
+        { status: 502 }
+      );
+    }
+
+    if (isMST && validQuestions.length < 7) {
+      return NextResponse.json(
+        { success: false, error: "MST requires exactly 7 descriptive questions. Please retry." },
+        { status: 502 }
       );
     }
 
     return NextResponse.json({
       success: true,
       subject: exam.subject || subjectName,
-      questions: exam.questions,
+      questions: isMST ? validQuestions.slice(0, 7) : validQuestions,
     });
   } catch (error) {
     console.error("GENERATE EXAM ERROR:", error);
@@ -196,7 +287,7 @@ Return exactly this structure:
         error:
           error instanceof Error
             ? error.message
-            : "Failed to generate exam",
+            : "Failed to generate exam.",
       },
       { status: 500 }
     );

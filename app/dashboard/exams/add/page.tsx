@@ -750,7 +750,7 @@ Practice Test:
   event?.preventDefault();
 
   if (!exam || exam.questions.length === 0) {
-    setGenerationError("No questions available. Please generate the exam again.");
+    setGenerationError("Exam questions are missing. Please generate again.");
     return;
   }
 
@@ -1204,11 +1204,11 @@ Practice Test:
             <button
   type="button"
   onClick={startExam}
-              className="mt-8 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-3.5 font-semibold transition hover:bg-blue-500"
-            >
-              <Play className="h-4 w-4 fill-current" />
-              Start Exam
-            </button>
+  className="mt-8 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-3.5 font-semibold transition hover:bg-blue-500"
+>
+  <Play className="h-4 w-4 fill-current" />
+  Start Exam
+</button>
           </section>
 
           <section className="mt-8 space-y-4">

@@ -148,46 +148,51 @@ ${outputFormat}
     let responseText = "";
     let lastError: unknown;
 
-    for (let attempt = 1; attempt <= 3; attempt++) {
-      try {
-        const response = await ai.models.generateContent({
-          model: "gemini-3.8-flash",
-          contents: prompt,
-          config: {
-            responseMimeType: "application/json",
-            temperature: 0.4,
-          },
-        });
+    const models = [
+  "gemini-3.8-flash",
+  "gemini-3.6-flash",
+  "gemini-3.5-flash-lite",
+];
 
-        responseText = response.text || "";
+for (const model of models) {
+  try {
+    console.log("Trying model:", model);
 
-        if (responseText.trim()) {
-          break;
-        }
+    const response = await ai.models.generateContent({
+      model,
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        temperature: 0.4,
+      },
+    });
 
-        throw new Error("Gemini returned an empty response.");
-      } catch (error: any) {
-        lastError = error;
+    responseText = response.text || "";
 
-        const message = String(
-          error?.message || error
-        ).toLowerCase();
-
-        const retryable =
-          message.includes("503") ||
-          message.includes("429") ||
-          message.includes("unavailable") ||
-          message.includes("high demand") ||
-          message.includes("overloaded") ||
-          message.includes("resource exhausted");
-
-        if (!retryable || attempt === 3) {
-          break;
-        }
-
-        await sleep(attempt * 1200);
-      }
+    if (responseText.trim()) {
+      console.log("Generated using:", model);
+      break;
     }
+
+    throw new Error("Empty Gemini response");
+  } catch (error: any) {
+    lastError = error;
+
+    const message = String(error?.message || error).toLowerCase();
+
+    console.error(`${model} failed:`, message);
+
+    const retryable =
+      message.includes("503") ||
+      message.includes("429") ||
+      message.includes("unavailable") ||
+      message.includes("high demand") ||
+      message.includes("overloaded") ||
+      message.includes("resource exhausted");
+
+    if (!retryable) break;
+  }
+}
 
     if (!responseText.trim()) {
       const message =

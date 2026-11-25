@@ -149,21 +149,21 @@ export default function AddExamPage() {
   const [submitted, setSubmitted] = useState(false);
   const [evaluating, setEvaluating] = useState(false);
 
-const [evaluationResults, setEvaluationResults] = useState<
-  {
-    questionId: string;
-    marksObtained: number;
-    maxMarks: number;
-    feedback: string;
-    strengths: string[];
-    improvements: string[];
-  }[]
->([]);
+  const [evaluationResults, setEvaluationResults] = useState<
+    {
+      questionId: string;
+      marksObtained: number;
+      maxMarks: number;
+      feedback: string;
+      strengths: string[];
+      improvements: string[];
+    }[]
+  >([]);
 
-const [aiScore, setAiScore] = useState(0);
-const [aiTotalMarks, setAiTotalMarks] = useState(0);
-const [aiPercentage, setAiPercentage] = useState(0);
-const [overallFeedback, setOverallFeedback] = useState("");
+  const [aiScore, setAiScore] = useState(0);
+  const [aiTotalMarks, setAiTotalMarks] = useState(0);
+  const [aiPercentage, setAiPercentage] = useState(0);
+  const [overallFeedback, setOverallFeedback] = useState("");
 
   useEffect(() => {
     loadSubjects();
@@ -297,20 +297,20 @@ End Semester Examination Pattern:
           : [];
 
       const normalized = list.map((item: any) => ({
-  id: String(item.id || item.subjectId || ""),
-  name: String(item.name || item.subjectName || "Unnamed Subject"),
-  code: item.code || item.subjectCode || "",
-  credits: item.credits || 0,
-  units: Array.isArray(item.units) ? item.units : [],
-  syllabus: Array.isArray(item.syllabus) ? item.syllabus : [],
-  description: item.description || "",
-  courseId: item.courseId || "",
-  courseName: item.courseName || "",
-  branchId: item.branchId || "",
-  branchName: item.branchName || "",
-  semesterId: item.semesterId || "",
-  semesterName: item.semesterName || "",
-}));
+        id: String(item.id || item.subjectId || ""),
+        name: String(item.name || item.subjectName || "Unnamed Subject"),
+        code: item.code || item.subjectCode || "",
+        credits: item.credits || 0,
+        units: Array.isArray(item.units) ? item.units : [],
+        syllabus: Array.isArray(item.syllabus) ? item.syllabus : [],
+        description: item.description || "",
+        courseId: item.courseId || "",
+        courseName: item.courseName || "",
+        branchId: item.branchId || "",
+        branchName: item.branchName || "",
+        semesterId: item.semesterId || "",
+        semesterName: item.semesterName || "",
+      }));
 
       setSubjects(normalized);
 
@@ -447,7 +447,6 @@ End Semester Examination Pattern:
       }
 
       const marks = Number(question.marks || 1);
-
       const words = answer.trim().split(/\s+/).length;
 
       if (marks <= 2) {
@@ -586,6 +585,8 @@ Practice Test:
     }
 
     const count = getQuestionCount();
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 90000);
 
     try {
       setGenerating(true);
@@ -595,6 +596,7 @@ Practice Test:
         headers: {
           "Content-Type": "application/json",
         },
+        signal: controller.signal,
         body: JSON.stringify({
           subjectName: subject.name,
           subjectCode: subject.code || "",
@@ -730,19 +732,21 @@ Practice Test:
       setAnswers({});
       setTimeLeft(duration * 60);
     } catch (error) {
-      console.error(error);
+      console.error("Exam generation error:", error);
 
       setGenerationError(
-        error instanceof Error
-          ? error.message
-          : "Something went wrong while generating the exam."
+        error instanceof Error && error.name === "AbortError"
+          ? "Gemini response timeout after 90 seconds. Please try again."
+          : error instanceof Error
+            ? error.message
+            : "Something went wrong while generating the exam."
       );
     } finally {
+      window.clearTimeout(timeout);
       setGenerating(false);
     }
   }
-
-  function startExam() {
+    function startExam() {
     if (!exam || exam.questions.length === 0) {
       return;
     }
@@ -755,9 +759,7 @@ Practice Test:
   }
 
   function chooseAnswer(optionIndex: number) {
-    if (submitted) {
-      return;
-    }
+    if (submitted) return;
 
     setAnswers((previous) => ({
       ...previous,
@@ -766,9 +768,7 @@ Practice Test:
   }
 
   function writeAnswer(value: string) {
-    if (submitted) {
-      return;
-    }
+    if (submitted) return;
 
     setAnswers((previous) => ({
       ...previous,
@@ -777,9 +777,7 @@ Practice Test:
   }
 
   function goNext() {
-    if (!exam) {
-      return;
-    }
+    if (!exam) return;
 
     if (currentQuestion < exam.questions.length - 1) {
       setCurrentQuestion((previous) => previous + 1);
@@ -793,153 +791,110 @@ Practice Test:
   }
 
   function jumpToQuestion(index: number) {
-    if (!exam) {
-      return;
-    }
-
+    if (!exam) return;
     setCurrentQuestion(index);
   }
 
   async function finishExam() {
-  if (!exam || evaluating) {
-    return;
-  }
+    if (!exam || evaluating) return;
 
-  if (examMode === "practice") {
-    const result = {
-      id: Date.now().toString(),
-      subject:
-        exam.subject ||
-        subject?.name ||
-        "Unknown Subject",
-      score,
-      total: exam.questions.length,
-      percentage,
-      mode: examMode,
-      date: new Date().toISOString(),
-    };
+    if (examMode === "practice") {
+      const result = {
+        id: Date.now().toString(),
+        subject: exam.subject || subject?.name || "Unknown Subject",
+        score,
+        total: exam.questions.length,
+        percentage,
+        mode: examMode,
+        date: new Date().toISOString(),
+      };
 
-    const existingResults = JSON.parse(
-      localStorage.getItem(
-        "semshot_exam_results"
-      ) || "[]"
-    );
+      const existingResults = JSON.parse(
+        localStorage.getItem("semshot_exam_results") || "[]"
+      );
 
-    localStorage.setItem(
-      "semshot_exam_results",
-      JSON.stringify([
-        result,
-        ...existingResults,
-      ])
-    );
+      localStorage.setItem(
+        "semshot_exam_results",
+        JSON.stringify([result, ...existingResults])
+      );
 
-    setStarted(false);
-    setSubmitted(true);
-    return;
-  }
+      setStarted(false);
+      setSubmitted(true);
+      return;
+    }
 
-  try {
-    setEvaluating(true);
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 90000);
 
-    const response = await fetch(
-      "/api/evaluate-exam",
-      {
+    try {
+      setEvaluating(true);
+
+      const response = await fetch("/api/evaluate-exam", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
+        signal: controller.signal,
         body: JSON.stringify({
-          subjectName:
-            exam.subject ||
-            subject?.name ||
-            "Unknown Subject",
+          subjectName: exam.subject || subject?.name || "Unknown Subject",
           examMode,
           questions: exam.questions,
           answers,
         }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data?.error || "AI evaluation failed");
       }
-    );
 
-    const data = await response.json();
-
-    if (!response.ok || !data.success) {
-      throw new Error(
-        data?.error ||
-          "AI evaluation failed"
+      setEvaluationResults(
+        Array.isArray(data.evaluations) ? data.evaluations : []
       );
+
+      setAiScore(Number(data.marksObtained || 0));
+      setAiTotalMarks(Number(data.totalMarks || 0));
+      setAiPercentage(Number(data.percentage || 0));
+      setOverallFeedback(String(data.overallFeedback || ""));
+
+      const result = {
+        id: Date.now().toString(),
+        subject: exam.subject || subject?.name || "Unknown Subject",
+        score: Number(data.marksObtained || 0),
+        total: Number(data.totalMarks || 0),
+        percentage: Number(data.percentage || 0),
+        mode: examMode,
+        date: new Date().toISOString(),
+      };
+
+      const existingResults = JSON.parse(
+        localStorage.getItem("semshot_exam_results") || "[]"
+      );
+
+      localStorage.setItem(
+        "semshot_exam_results",
+        JSON.stringify([result, ...existingResults])
+      );
+
+      setStarted(false);
+      setSubmitted(true);
+    } catch (error) {
+      console.error("Exam evaluation error:", error);
+
+      setGenerationError(
+        error instanceof Error && error.name === "AbortError"
+          ? "AI evaluation timed out. Please try again."
+          : error instanceof Error
+            ? error.message
+            : "AI evaluation failed. Please try again."
+      );
+    } finally {
+      window.clearTimeout(timeout);
+      setEvaluating(false);
     }
-
-    setEvaluationResults(
-      Array.isArray(data.evaluations)
-        ? data.evaluations
-        : []
-    );
-
-    setAiScore(
-      Number(data.marksObtained || 0)
-    );
-
-    setAiTotalMarks(
-      Number(data.totalMarks || 0)
-    );
-
-    setAiPercentage(
-      Number(data.percentage || 0)
-    );
-
-    setOverallFeedback(
-      String(
-        data.overallFeedback || ""
-      )
-    );
-
-    const result = {
-      id: Date.now().toString(),
-      subject:
-        exam.subject ||
-        subject?.name ||
-        "Unknown Subject",
-      score: Number(
-        data.marksObtained || 0
-      ),
-      total: Number(
-        data.totalMarks || 0
-      ),
-      percentage: Number(
-        data.percentage || 0
-      ),
-      mode: examMode,
-      date: new Date().toISOString(),
-    };
-
-    const existingResults = JSON.parse(
-      localStorage.getItem(
-        "semshot_exam_results"
-      ) || "[]"
-    );
-
-    localStorage.setItem(
-      "semshot_exam_results",
-      JSON.stringify([
-        result,
-        ...existingResults,
-      ])
-    );
-
-    setStarted(false);
-    setSubmitted(true);
-  } catch (error) {
-    console.error(error);
-
-    setGenerationError(
-      error instanceof Error
-        ? error.message
-        : "AI evaluation failed. Please try again."
-    );
-  } finally {
-    setEvaluating(false);
   }
-}
+
   function createNewExam() {
     setExam(null);
     setStarted(false);
@@ -948,6 +903,11 @@ Practice Test:
     setAnswers({});
     setTimeLeft(duration * 60);
     setGenerationError("");
+    setEvaluationResults([]);
+    setAiScore(0);
+    setAiTotalMarks(0);
+    setAiPercentage(0);
+    setOverallFeedback("");
   }
 
   function formatTime(seconds: number) {
@@ -989,401 +949,175 @@ Practice Test:
   }
 
   if (submitted && exam) {
-  return (
-    <main className="min-h-screen bg-[#050505] px-4 py-8 text-white md:px-8">
-      <div className="mx-auto max-w-5xl">
-        <button
-          onClick={createNewExam}
-          className="mb-8 inline-flex items-center gap-2 text-sm text-zinc-400 transition hover:text-white"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Create New Exam
-        </button>
-
-        <section className="overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-blue-950/40 via-zinc-950 to-purple-950/30 p-8 shadow-2xl">
-          <div className="flex flex-col items-center text-center">
-            <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-blue-500/15 ring-1 ring-blue-500/30">
-              <Trophy className="h-10 w-10 text-blue-400" />
-            </div>
-
-            <p className="text-sm font-medium uppercase tracking-[0.25em] text-blue-400">
-              Exam Completed
-            </p>
-
-            <h1 className="mt-3 text-3xl font-bold md:text-5xl">
-              {exam.subject}
-            </h1>
-
-            <p className="mt-3 text-sm text-zinc-500">
-              {examMode === "practice"
-                ? "Your MCQ practice result is ready."
-                : "Your descriptive exam has been evaluated by SemShot AI."}
-            </p>
-
-            <div className="mt-8 grid w-full max-w-3xl gap-4 sm:grid-cols-3">
-              <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
-                <p className="text-sm text-zinc-500">Score</p>
-
-                <p className="mt-2 text-3xl font-bold">
-                  {examMode === "practice"
-                    ? `${score}/${exam.questions.length}`
-                    : `${aiScore}/${aiTotalMarks}`}
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
-                <p className="text-sm text-zinc-500">Percentage</p>
-
-                <p className="mt-2 text-3xl font-bold text-blue-400">
-                  {examMode === "practice"
-                    ? `${percentage}%`
-                    : `${aiPercentage}%`}
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
-                <p className="text-sm text-zinc-500">Answered</p>
-
-                <p className="mt-2 text-3xl font-bold">
-                  {examMode === "practice"
-                    ? `${answeredCount}/${exam.questions.length}`
-                    : `${evaluationResults.length}/${exam.questions.length}`}
-                </p>
-              </div>
-            </div>
-
-            {examMode !== "practice" && (
-              <div className="mt-7 w-full max-w-3xl rounded-2xl border border-blue-500/20 bg-blue-500/5 p-5 text-left">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="h-5 w-5 text-blue-400" />
-
-                  <h3 className="font-semibold text-blue-400">
-                    AI Performance Feedback
-                  </h3>
-                </div>
-
-                <p className="mt-3 text-sm leading-7 text-zinc-300">
-                  {overallFeedback ||
-                    "AI evaluation completed. Review the question-wise feedback below to improve your preparation."}
-                </p>
-              </div>
-            )}
-
-            <div className="mt-7 flex flex-wrap justify-center gap-3">
-              <button
-                onClick={startExam}
-                className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.05] px-5 py-3 font-medium transition hover:bg-white/[0.1]"
-              >
-                <RotateCcw className="h-4 w-4" />
-                Retake Exam
-              </button>
-
-              <button
-                onClick={createNewExam}
-                className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 font-medium transition hover:bg-blue-500"
-              >
-                <Sparkles className="h-4 w-4" />
-                Generate New Exam
-              </button>
-            </div>
-          </div>
-        </section>
-
-        <section className="mt-8 space-y-5">
-          {exam.questions.map((question, index) => {
-  const isCurrent = index === currentQuestion;
-
-const answer = answers[index];
-
-const isAnswered =
-  examMode === "practice"
-    ? typeof answer === "number"
-    : typeof answer === "string" && answer.trim().length > 0;
-
-  return (
-    <button
-      key={question.id}
-      onClick={() => jumpToQuestion(index)}
-      className={`flex h-10 items-center justify-center rounded-lg text-xs font-semibold transition ${
-        isCurrent
-          ? "bg-blue-600 text-white ring-2 ring-blue-400/30"
-          : isAnswered
-            ? "bg-emerald-500/15 text-emerald-400 ring-1 ring-emerald-500/20"
-            : "bg-white/[0.04] text-zinc-500 hover:bg-white/[0.08]"
-      }`}
-    >
-      {index + 1}
-    </button>
-  );
-})}
-        </section>
-      </div>
-    </main>
-  );
-}
-
-  if (started && exam && current) {
-    const selectedAnswer = answers[currentQuestion];
-    const progress =
-      ((currentQuestion + 1) / exam.questions.length) * 100;
-
-    const currentMarks = Number(current.marks || 1);
-
     return (
-      <main className="min-h-screen bg-[#050505] text-white">
-        <header className="sticky top-0 z-40 border-b border-white/10 bg-[#050505]/95 backdrop-blur-xl">
-          <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 md:px-8">
-            <div className="min-w-0">
-              <p className="text-xs text-zinc-500">SemShot AI Exam</p>
+      <main className="min-h-screen bg-[#050505] px-4 py-8 text-white md:px-8">
+        <div className="mx-auto max-w-5xl">
+          <button
+            onClick={createNewExam}
+            className="mb-8 inline-flex items-center gap-2 text-sm text-zinc-400 transition hover:text-white"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Create New Exam
+          </button>
 
-              <h1 className="truncate text-sm font-semibold md:text-base">
+          <section className="overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-blue-950/40 via-zinc-950 to-purple-950/30 p-8 shadow-2xl">
+            <div className="flex flex-col items-center text-center">
+              <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-blue-500/15 ring-1 ring-blue-500/30">
+                <Trophy className="h-10 w-10 text-blue-400" />
+              </div>
+
+              <p className="text-sm font-medium uppercase tracking-[0.25em] text-blue-400">
+                Exam Completed
+              </p>
+
+              <h1 className="mt-3 text-3xl font-bold md:text-5xl">
                 {exam.subject}
               </h1>
-            </div>
 
-            <div
-              className={`flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-semibold ${
-                timeLeft <= 60
-                  ? "border-red-500/30 bg-red-500/10 text-red-400"
-                  : "border-blue-500/20 bg-blue-500/10 text-blue-400"
-              }`}
-            >
-              <Clock3 className="h-4 w-4" />
-              {formatTime(timeLeft)}
-            </div>
-          </div>
+              <p className="mt-3 text-sm text-zinc-500">
+                {examMode === "practice"
+                  ? "Your MCQ practice result is ready."
+                  : "Your descriptive exam has been evaluated by SemShot AI."}
+              </p>
 
-          <div className="h-1 bg-white/5">
-            <div
-              className="h-full bg-blue-500 transition-all duration-300"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-        </header>
-
-        <div className="mx-auto grid max-w-7xl gap-6 px-4 py-6 md:grid-cols-[1fr_280px] md:px-8">
-          <section className="rounded-3xl border border-white/10 bg-zinc-950/80 p-5 md:p-8">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <p className="text-sm text-zinc-500">
-                  Question {currentQuestion + 1} of{" "}
-                  {exam.questions.length}
-                </p>
-
-                {current.unit && (
-                  <p className="mt-1 text-xs text-blue-400">
-                    {current.unit}
-                  </p>
-                )}
-              </div>
-
-              <div className="flex items-center gap-2">
-                {examMode !== "practice" && (
-                  <span className="rounded-full bg-blue-500/10 px-3 py-1 text-xs font-semibold text-blue-400">
-                    {currentMarks} Marks
-                  </span>
-                )}
-
-                <span className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-xs text-zinc-400">
-                  {current.difficulty || difficulty}
-                </span>
-              </div>
-            </div>
-
-            <h2 className="mt-8 text-xl font-semibold leading-8 md:text-2xl">
-              {current.question}
-            </h2>
-
-            {examMode === "practice" ? (
-              <div className="mt-8 space-y-3">
-                {current.options?.map((option, index) => {
-                  const selected = selectedAnswer === index;
-
-                  return (
-                    <button
-                      key={`${current.id}-${index}`}
-                      onClick={() => chooseAnswer(index)}
-                      className={`flex w-full items-center gap-4 rounded-2xl border p-4 text-left transition ${
-                        selected
-                          ? "border-blue-500 bg-blue-500/10 shadow-lg shadow-blue-500/5"
-                          : "border-white/10 bg-white/[0.02] hover:border-white/20 hover:bg-white/[0.04]"
-                      }`}
-                    >
-                      <span
-                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-sm font-semibold ${
-                          selected
-                            ? "bg-blue-600 text-white"
-                            : "bg-white/[0.05] text-zinc-400"
-                        }`}
-                      >
-                        {getOptionLetter(index)}
-                      </span>
-
-                      <span
-                        className={
-                          selected ? "text-white" : "text-zinc-300"
-                        }
-                      >
-                        {option}
-                      </span>
-
-                      {selected && (
-                        <Check className="ml-auto h-5 w-5 text-blue-400" />
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="mt-8">
-                <div className="mb-3 flex items-center justify-between">
-                  <p className="text-sm font-medium text-zinc-300">
-                    Write your answer
-                  </p>
-
-                  <p className="text-xs text-zinc-600">
-                    {currentMarks === 2
-                      ? "Short answer"
-                      : currentMarks <= 5
-                        ? "Moderate answer"
-                        : "Detailed answer"}
+              <div className="mt-8 grid w-full max-w-3xl gap-4 sm:grid-cols-3">
+                <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
+                  <p className="text-sm text-zinc-500">Score</p>
+                  <p className="mt-2 text-3xl font-bold">
+                    {examMode === "practice"
+                      ? `${score}/${exam.questions.length}`
+                      : `${aiScore}/${aiTotalMarks}`}
                   </p>
                 </div>
 
-                <textarea
-                  value={
-                    typeof selectedAnswer === "string"
-                      ? selectedAnswer
-                      : ""
-                  }
-                  onChange={(event) =>
-                    writeAnswer(event.target.value)
-                  }
-                  placeholder={getAnswerPlaceholder(currentMarks)}
-                  className="min-h-[260px] w-full resize-y rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-sm leading-7 text-white outline-none transition placeholder:text-zinc-700 focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20"
-                />
+                <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
+                  <p className="text-sm text-zinc-500">Percentage</p>
+                  <p className="mt-2 text-3xl font-bold text-blue-400">
+                    {examMode === "practice"
+                      ? `${percentage}%`
+                      : `${aiPercentage}%`}
+                  </p>
+                </div>
 
-                <div className="mt-3 flex items-center justify-between text-xs text-zinc-600">
-                  <span>
-                    Write only what is required according to the marks.
-                  </span>
-
-                  <span>
-                    {typeof selectedAnswer === "string"
-                      ? selectedAnswer.length
-                      : 0}{" "}
-                    characters
-                  </span>
+                <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
+                  <p className="text-sm text-zinc-500">Answered</p>
+                  <p className="mt-2 text-3xl font-bold">
+                    {examMode === "practice"
+                      ? `${answeredCount}/${exam.questions.length}`
+                      : `${evaluationResults.length}/${exam.questions.length}`}
+                  </p>
                 </div>
               </div>
-            )}
 
-            <div className="mt-8 flex items-center justify-between gap-3 border-t border-white/10 pt-6">
-              <button
-                onClick={goPrevious}
-                disabled={currentQuestion === 0}
-                className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm font-medium transition hover:bg-white/[0.06] disabled:cursor-not-allowed disabled:opacity-30"
-              >
-                <ArrowLeft className="h-4 w-4" />
-                Previous
-              </button>
+              {examMode !== "practice" && (
+                <div className="mt-7 w-full max-w-3xl rounded-2xl border border-blue-500/20 bg-blue-500/5 p-5 text-left">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="h-5 w-5 text-blue-400" />
+                    <h3 className="font-semibold text-blue-400">
+                      AI Performance Feedback
+                    </h3>
+                  </div>
 
-              {currentQuestion === exam.questions.length - 1 ? (
-                <button
-  onClick={finishExam}
-  disabled={evaluating}
-  className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
->
-  {evaluating ? (
-    <>
-      <Loader2 className="h-4 w-4 animate-spin" />
-      AI Checking...
-    </>
-  ) : (
-    <>
-      <CheckCircle2 className="h-4 w-4" />
-      Submit Exam
-    </>
-  )}
-</button>
-              ) : (
-                <button
-                  onClick={goNext}
-                  className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold transition hover:bg-blue-500"
-                >
-                  Next
-                  <ArrowRight className="h-4 w-4" />
-                </button>
+                  <p className="mt-3 text-sm leading-7 text-zinc-300">
+                    {overallFeedback ||
+                      "AI evaluation completed. Review the question-wise feedback below."}
+                  </p>
+                </div>
               )}
+
+              <div className="mt-7 flex flex-wrap justify-center gap-3">
+                <button
+                  onClick={startExam}
+                  className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.05] px-5 py-3 font-medium transition hover:bg-white/[0.1]"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                  Retake Exam
+                </button>
+
+                <button
+                  onClick={createNewExam}
+                  className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 font-medium transition hover:bg-blue-500"
+                >
+                  <Sparkles className="h-4 w-4" />
+                  Generate New Exam
+                </button>
+              </div>
             </div>
           </section>
 
-          <aside className="h-fit rounded-3xl border border-white/10 bg-zinc-950/80 p-5 md:sticky md:top-24">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-semibold">Questions</p>
-
-                <p className="mt-1 text-xs text-zinc-500">
-                  {answeredCount} answered
+          <section className="mt-8 space-y-5">
+            {exam.questions.map((question, index) => (
+              <div
+                key={question.id}
+                className="rounded-2xl border border-white/10 bg-zinc-950 p-5"
+              >
+                <p className="text-xs text-blue-400">
+                  Question {index + 1} · {question.marks || 1} Marks
                 </p>
+
+                <h3 className="mt-3 font-semibold">
+                  {question.question}
+                </h3>
+
+                {examMode === "practice" && (
+                  <div className="mt-4 space-y-2 text-sm">
+                    {question.options?.map((option, optionIndex) => (
+                      <p
+                        key={optionIndex}
+                        className={
+                          optionIndex === question.answer
+                            ? "text-emerald-400"
+                            : "text-zinc-400"
+                        }
+                      >
+                        {getOptionLetter(optionIndex)}. {option}
+                      </p>
+                    ))}
+                  </div>
+                )}
+
+                {examMode !== "practice" && (
+                  <>
+                    <p className="mt-3 whitespace-pre-wrap text-sm text-zinc-400">
+                      {String(answers[index] || "Not answered")}
+                    </p>
+
+                    {evaluationResults[index] && (
+                      <div className="mt-4 rounded-xl bg-white/[0.03] p-4">
+                        <p className="text-sm font-semibold text-blue-400">
+                          Marks: {evaluationResults[index].marksObtained}/
+                          {evaluationResults[index].maxMarks}
+                        </p>
+                        <p className="mt-2 text-sm text-zinc-400">
+                          {evaluationResults[index].feedback}
+                        </p>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {examMode === "practice" && (
+                  <p className="mt-3 text-sm text-zinc-500">
+                    Your answer:{" "}
+                    {typeof answers[index] === "number"
+                      ? getOptionLetter(Number(answers[index]))
+                      : "Not answered"}
+                  </p>
+                )}
+
+                {question.explanation && examMode === "practice" && (
+                  <p className="mt-3 text-sm text-zinc-500">
+                    Explanation: {question.explanation}
+                  </p>
+                )}
               </div>
-
-              <Target className="h-5 w-5 text-blue-400" />
-            </div>
-
-            <div className="mt-5 grid grid-cols-5 gap-2">
-              {exam.questions.map((question, index) => {
-  const isCurrent = index === currentQuestion;
-
-  const answer = answers[index];
-
-  const isAnswered =
-    examMode === "practice"
-      ? typeof answer === "number"
-      : typeof answer === "string" && answer.trim().length > 0;
-
-  return (
-    <button
-      key={question.id}
-      type="button"
-      onClick={() => jumpToQuestion(index)}
-      className={`flex h-10 w-10 items-center justify-center rounded-lg text-sm font-medium transition ${
-        isCurrent
-          ? "bg-blue-600 text-white ring-2 ring-blue-400/30"
-          : isAnswered
-            ? "bg-emerald-500/15 text-emerald-400 ring-1 ring-emerald-500/30"
-            : "bg-white/[0.04] text-zinc-500 hover:bg-white/[0.08]"
-      }`}
-    >
-      {index + 1}
-    </button>
-  );
-})}
-            </div>
-
-            <div className="mt-6 space-y-2 text-xs text-zinc-500">
-              <div className="flex items-center gap-2">
-                <span className="h-2.5 w-2.5 rounded-full bg-blue-500" />
-                Current
-              </div>
-
-              <div className="flex items-center gap-2">
-                <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
-                Answered
-              </div>
-
-              <div className="flex items-center gap-2">
-                <span className="h-2.5 w-2.5 rounded-full bg-zinc-700" />
-                Unanswered
-              </div>
-            </div>
-          </aside>
+            ))}
+          </section>
         </div>
       </main>
     );
   }
-
-  if (exam && !started) {
+    if (exam && !started) {
     return (
       <main className="min-h-screen bg-[#050505] px-4 py-8 text-white md:px-8">
         <div className="mx-auto max-w-6xl">
@@ -1426,23 +1160,17 @@ const isAnswered =
             <div className="mt-8 grid gap-3 sm:grid-cols-4">
               <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
                 <p className="text-xs text-zinc-500">Questions</p>
-                <p className="mt-2 text-2xl font-bold">
-                  {exam.questions.length}
-                </p>
+                <p className="mt-2 text-2xl font-bold">{exam.questions.length}</p>
               </div>
 
               <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
                 <p className="text-xs text-zinc-500">Total Marks</p>
-                <p className="mt-2 text-2xl font-bold">
-                  {totalMarks}
-                </p>
+                <p className="mt-2 text-2xl font-bold">{totalMarks}</p>
               </div>
 
               <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
                 <p className="text-xs text-zinc-500">Duration</p>
-                <p className="mt-2 text-2xl font-bold">
-                  {duration} min
-                </p>
+                <p className="mt-2 text-2xl font-bold">{duration} min</p>
               </div>
 
               <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
@@ -1462,11 +1190,8 @@ const isAnswered =
                 <p className="text-sm font-semibold text-blue-400">
                   Descriptive Examination
                 </p>
-
                 <p className="mt-1 text-sm leading-6 text-zinc-400">
-                  No MCQ options will be shown. You will type your own
-                  answers and should keep the answer length appropriate
-                  to the marks.
+                  No MCQ options will be shown. You will type your own answers.
                 </p>
               </div>
             )}
@@ -1482,10 +1207,7 @@ const isAnswered =
 
           <section className="mt-8 space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold">
-                Generated Questions
-              </h2>
-
+              <h2 className="text-xl font-bold">Generated Questions</h2>
               <span className="text-sm text-zinc-500">
                 {exam.questions.length} questions
               </span>
@@ -1522,26 +1244,23 @@ const isAnswered =
 
                     {examMode === "practice" && (
                       <div className="mt-4 grid gap-2 md:grid-cols-2">
-                        {question.options?.map(
-                          (option, optionIndex) => (
-                            <div
-                              key={`${question.id}-${optionIndex}`}
-                              className="rounded-xl border border-white/10 bg-white/[0.02] p-3 text-sm text-zinc-400"
-                            >
-                              <span className="mr-2 font-semibold text-zinc-500">
-                                {getOptionLetter(optionIndex)}.
-                              </span>
-                              {option}
-                            </div>
-                          )
-                        )}
+                        {question.options?.map((option, optionIndex) => (
+                          <div
+                            key={`${question.id}-${optionIndex}`}
+                            className="rounded-xl border border-white/10 bg-white/[0.02] p-3 text-sm text-zinc-400"
+                          >
+                            <span className="mr-2 font-semibold text-zinc-500">
+                              {getOptionLetter(optionIndex)}.
+                            </span>
+                            {option}
+                          </div>
+                        ))}
                       </div>
                     )}
 
                     {examMode !== "practice" && (
                       <div className="mt-4 rounded-xl border border-white/10 bg-white/[0.02] p-3 text-sm text-zinc-500">
-                        Student will write the answer according to{" "}
-                        {question.marks} marks.
+                        Student will write the answer according to {question.marks} marks.
                       </div>
                     )}
                   </div>
@@ -1576,8 +1295,7 @@ const isAnswered =
           </h1>
 
           <p className="mt-2 max-w-2xl text-zinc-400">
-            Select your subject and syllabus. SemShot AI will generate
-            an examination based on your academic content.
+            Select your subject and syllabus. SemShot AI will generate an examination based on your academic content.
           </p>
         </div>
 
@@ -1585,12 +1303,8 @@ const isAnswered =
           <div className="mb-6 rounded-2xl border border-red-500/20 bg-red-500/10 p-4">
             <div className="flex gap-3">
               <XCircle className="h-5 w-5 shrink-0 text-red-400" />
-
               <div>
-                <p className="font-medium text-red-300">
-                  Generation failed
-                </p>
-
+                <p className="font-medium text-red-300">Generation failed</p>
                 <p className="mt-1 text-sm leading-6 text-red-300/70">
                   {generationError}
                 </p>
@@ -1606,7 +1320,6 @@ const isAnswered =
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/10">
                   <BookOpen className="h-5 w-5 text-blue-400" />
                 </div>
-
                 <div>
                   <h2 className="font-semibold">Select Subject</h2>
                   <p className="text-xs text-zinc-500">
@@ -1616,32 +1329,30 @@ const isAnswered =
               </div>
 
               <div className="mt-5">
- <select
-  value={subject?.id || ""}
-  onChange={(e) => {
-    const selected = subjects.find(
-      (item) => item.id === e.target.value
-    );
+                <select
+                  value={subject?.id || ""}
+                  onChange={(e) => {
+                    const selected = subjects.find(
+                      (item) => item.id === e.target.value
+                    );
+                    setSubject(selected || null);
+                    setSubjectId(e.target.value);
+                  }}
+                  className="w-full rounded-xl border border-white/10 bg-zinc-900 px-4 py-3 text-white"
+                >
+                  <option value="">Select Subject</option>
+                  {subjects.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.name} {item.code ? `(${item.code})` : ""}
+                    </option>
+                  ))}
+                </select>
 
-    setSubject(selected || null);
-    setSubjectId(e.target.value);
-  }}
-  className="w-full rounded-xl border border-white/10 bg-zinc-900 px-4 py-3 text-white"
->
-  <option value="">Select Subject</option>
-
-  {subjects.map((item) => (
-    <option key={item.id} value={item.id}>
-      {item.name} {item.code ? `(${item.code})` : ""}
-    </option>
-  ))}
-</select>
-
-{!loadingSubjects && subjects.length === 0 && (
-  <p className="mt-2 text-sm text-red-400">
-    No subjects found. Please try again.
-  </p>
-)}
+                {!loadingSubjects && subjects.length === 0 && (
+                  <p className="mt-2 text-sm text-red-400">
+                    No subjects found. Please try again.
+                  </p>
+                )}
 
                 {loadingSubject && (
                   <div className="mt-3 flex items-center gap-2 text-xs text-zinc-500">
@@ -1654,17 +1365,13 @@ const isAnswered =
                   <div className="mt-4 rounded-2xl border border-blue-500/20 bg-blue-500/5 p-4">
                     <div className="flex items-start justify-between gap-4">
                       <div>
-                        <p className="font-semibold text-white">
-                          {subject.name}
-                        </p>
-
+                        <p className="font-semibold text-white">{subject.name}</p>
                         <div className="mt-2 flex flex-wrap gap-2">
                           {subject.code && (
                             <span className="rounded-lg bg-white/[0.05] px-2.5 py-1 text-xs text-zinc-400">
                               {subject.code}
                             </span>
                           )}
-
                           {subject.credits ? (
                             <span className="rounded-lg bg-white/[0.05] px-2.5 py-1 text-xs text-zinc-400">
                               {subject.credits} Credits
@@ -1672,7 +1379,6 @@ const isAnswered =
                           ) : null}
                         </div>
                       </div>
-
                       <CheckCircle2 className="h-5 w-5 text-emerald-400" />
                     </div>
                   </div>
@@ -1686,12 +1392,8 @@ const isAnswered =
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-500/10">
                     <BookOpen className="h-5 w-5 text-purple-400" />
                   </div>
-
                   <div>
-                    <h2 className="font-semibold">
-                      Syllabus & Units
-                    </h2>
-
+                    <h2 className="font-semibold">Syllabus & Units</h2>
                     <p className="text-xs text-zinc-500">
                       Choose what AI should use
                     </p>
@@ -1711,7 +1413,6 @@ const isAnswered =
               {!subject ? (
                 <div className="mt-5 rounded-2xl border border-dashed border-white/10 p-8 text-center">
                   <BookOpen className="mx-auto h-8 w-8 text-zinc-700" />
-
                   <p className="mt-3 text-sm text-zinc-500">
                     Select a subject to see its syllabus.
                   </p>
@@ -1721,10 +1422,8 @@ const isAnswered =
                   <p className="font-medium text-yellow-300">
                     Syllabus not available
                   </p>
-
                   <p className="mt-1 text-sm leading-6 text-yellow-300/60">
-                    Add syllabus units to this subject before
-                    generating an AI exam.
+                    Add syllabus units to this subject before generating an AI exam.
                   </p>
                 </div>
               ) : (
@@ -1749,20 +1448,9 @@ const isAnswered =
                               : "bg-white/[0.05] text-zinc-500"
                           }`}
                         >
-                          {selected ? (
-                            <Check className="h-4 w-4" />
-                          ) : (
-                            index + 1
-                          )}
+                          {selected ? <Check className="h-4 w-4" /> : index + 1}
                         </span>
-
-                        <span
-                          className={
-                            selected
-                              ? "text-white"
-                              : "text-zinc-400"
-                          }
-                        >
+                        <span className={selected ? "text-white" : "text-zinc-400"}>
                           {unit}
                         </span>
                       </button>
@@ -1777,7 +1465,6 @@ const isAnswered =
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-500/10">
                   <GraduationCap className="h-5 w-5 text-cyan-400" />
                 </div>
-
                 <div>
                   <h2 className="font-semibold">Exam Mode</h2>
                   <p className="text-xs text-zinc-500">
@@ -1796,15 +1483,11 @@ const isAnswered =
                       key={mode.value}
                       onClick={() => {
                         setExamMode(mode.value);
-
-                        if (
-                          mode.value === "mst" ||
-                          mode.value === "endsem"
-                        ) {
-                          setQuestionType("Descriptive");
-                        } else {
-                          setQuestionType("MCQ");
-                        }
+                        setQuestionType(
+                          mode.value === "mst" || mode.value === "endsem"
+                            ? "Descriptive"
+                            : "MCQ"
+                        );
 
                         if (mode.value === "mst") {
                           setQuestionCount(7);
@@ -1831,17 +1514,12 @@ const isAnswered =
                       >
                         <Icon className="h-5 w-5" />
                       </div>
-
                       <div className="flex-1">
-                        <p className="font-medium">
-                          {mode.title}
-                        </p>
-
+                        <p className="font-medium">{mode.title}</p>
                         <p className="mt-1 text-xs text-zinc-500">
                           {mode.description}
                         </p>
                       </div>
-
                       {selected && (
                         <CheckCircle2 className="h-5 w-5 text-blue-400" />
                       )}
@@ -1856,10 +1534,8 @@ const isAnswered =
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500/10">
                   <Zap className="h-5 w-5 text-orange-400" />
                 </div>
-
                 <div>
                   <h2 className="font-semibold">Exam Pattern</h2>
-
                   <p className="text-xs text-zinc-500">
                     Instructions for the AI
                   </p>
@@ -1868,9 +1544,7 @@ const isAnswered =
 
               <textarea
                 value={examPattern}
-                onChange={(event) =>
-                  setExamPattern(event.target.value)
-                }
+                onChange={(event) => setExamPattern(event.target.value)}
                 rows={8}
                 className="mt-5 w-full resize-none rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm leading-6 text-white outline-none placeholder:text-zinc-700 focus:border-blue-500"
               />
@@ -1883,10 +1557,8 @@ const isAnswered =
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/10">
                   <Brain className="h-5 w-5 text-blue-400" />
                 </div>
-
                 <div>
                   <h2 className="font-semibold">AI Settings</h2>
-
                   <p className="text-xs text-zinc-500">
                     Customize your exam
                   </p>
@@ -1896,10 +1568,7 @@ const isAnswered =
               <div className="mt-6 space-y-6">
                 <div>
                   <div className="flex items-center justify-between">
-                    <label className="text-sm font-medium">
-                      Questions
-                    </label>
-
+                    <label className="text-sm font-medium">Questions</label>
                     <span className="rounded-lg bg-blue-500/10 px-2.5 py-1 text-xs font-semibold text-blue-400">
                       {getQuestionCount()}
                     </span>
@@ -1910,13 +1579,9 @@ const isAnswered =
                     min={5}
                     max={50}
                     value={questionCount}
-                    disabled={
-                      examMode === "mst"
-                    }
+                    disabled={examMode === "mst"}
                     onChange={(event) =>
-                      setQuestionCount(
-                        Number(event.target.value)
-                      )
+                      setQuestionCount(Number(event.target.value))
                     }
                     className="mt-4 w-full accent-blue-600"
                   />
@@ -1929,27 +1594,19 @@ const isAnswered =
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium">
-                    Difficulty
-                  </label>
-
+                  <label className="text-sm font-medium">Difficulty</label>
                   <div className="mt-3 space-y-2">
                     {difficultyOptions.map((item) => (
                       <button
                         key={item.value}
-                        onClick={() =>
-                          setDifficulty(item.value)
-                        }
+                        onClick={() => setDifficulty(item.value)}
                         className={`w-full rounded-xl border p-3 text-left transition ${
                           difficulty === item.value
                             ? "border-blue-500/30 bg-blue-500/10"
                             : "border-white/10 bg-white/[0.02]"
                         }`}
                       >
-                        <p className="text-sm font-medium">
-                          {item.title}
-                        </p>
-
+                        <p className="text-sm font-medium">{item.title}</p>
                         <p className="mt-1 text-[11px] text-zinc-500">
                           {item.description}
                         </p>
@@ -1959,37 +1616,24 @@ const isAnswered =
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium">
-                    Question Type
-                  </label>
-
+                  <label className="text-sm font-medium">Question Type</label>
                   <div className="mt-3">
                     {questionTypes.map((item) => {
                       const disabled =
-                        examMode === "mst" ||
-                        examMode === "endsem";
+                        examMode === "mst" || examMode === "endsem";
 
                       return (
                         <button
                           key={item.value}
                           disabled={disabled}
-                          onClick={() =>
-                            setQuestionType(item.value)
-                          }
+                          onClick={() => setQuestionType(item.value)}
                           className={`w-full rounded-xl border p-3 text-left transition ${
                             questionType === item.value
                               ? "border-blue-500/30 bg-blue-500/10"
                               : "border-white/10 bg-white/[0.02]"
-                          } ${
-                            disabled
-                              ? "cursor-not-allowed opacity-60"
-                              : ""
-                          }`}
+                          } ${disabled ? "cursor-not-allowed opacity-60" : ""}`}
                         >
-                          <p className="text-sm font-medium">
-                            {item.title}
-                          </p>
-
+                          <p className="text-sm font-medium">{item.title}</p>
                           <p className="mt-1 text-[11px] text-zinc-500">
                             {item.description}
                           </p>
@@ -1998,8 +1642,7 @@ const isAnswered =
                     })}
                   </div>
 
-                  {(examMode === "mst" ||
-                    examMode === "endsem") && (
+                  {(examMode === "mst" || examMode === "endsem") && (
                     <p className="mt-2 text-xs text-blue-400">
                       Descriptive mode is locked for this exam.
                     </p>
@@ -2008,33 +1651,26 @@ const isAnswered =
 
                 <div>
                   <div className="flex items-center justify-between">
-                    <label className="text-sm font-medium">
-                      Duration
-                    </label>
-
+                    <label className="text-sm font-medium">Duration</label>
                     <span className="text-xs text-zinc-500">
                       {duration} minutes
                     </span>
                   </div>
 
                   <div className="mt-3 grid grid-cols-3 gap-2">
-                    {[10, 20, 30, 45, 60, 90].map(
-                      (minutes) => (
-                        <button
-                          key={minutes}
-                          onClick={() =>
-                            setDuration(minutes)
-                          }
-                          className={`rounded-xl border px-3 py-2 text-xs font-medium transition ${
-                            duration === minutes
-                              ? "border-blue-500/30 bg-blue-500/10 text-blue-400"
-                              : "border-white/10 bg-white/[0.02] text-zinc-500 hover:bg-white/[0.05]"
-                          }`}
-                        >
-                          {minutes}m
-                        </button>
-                      )
-                    )}
+                    {[10, 20, 30, 45, 60, 90].map((minutes) => (
+                      <button
+                        key={minutes}
+                        onClick={() => setDuration(minutes)}
+                        className={`rounded-xl border px-3 py-2 text-xs font-medium transition ${
+                          duration === minutes
+                            ? "border-blue-500/30 bg-blue-500/10 text-blue-400"
+                            : "border-white/10 bg-white/[0.02] text-zinc-500 hover:bg-white/[0.05]"
+                        }`}
+                      >
+                        {minutes}m
+                      </button>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -2043,40 +1679,26 @@ const isAnswered =
             <section className="rounded-3xl border border-blue-500/20 bg-gradient-to-br from-blue-500/10 via-transparent to-purple-500/10 p-6">
               <div className="flex items-start gap-3">
                 <Sparkles className="mt-0.5 h-5 w-5 text-blue-400" />
-
                 <div>
-                  <p className="font-semibold">
-                    Ready to generate?
-                  </p>
-
+                  <p className="font-semibold">Ready to generate?</p>
                   <p className="mt-2 text-xs leading-5 text-zinc-500">
-                    AI will analyze the selected subject and
-                    syllabus and create university-level
-                    questions.
+                    AI will analyze the selected subject and syllabus and create university-level questions.
                   </p>
                 </div>
               </div>
 
               <div className="mt-5 space-y-2 text-xs text-zinc-500">
-                <div className="flex items-center gap-2">
-                  <Check className="h-3.5 w-3.5 text-emerald-400" />
-                  Subject-aware questions
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <Check className="h-3.5 w-3.5 text-emerald-400" />
-                  Syllabus-based generation
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <Check className="h-3.5 w-3.5 text-emerald-400" />
-                  Marks-based descriptive questions
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <Check className="h-3.5 w-3.5 text-emerald-400" />
-                  Automatic result saving
-                </div>
+                {[
+                  "Subject-aware questions",
+                  "Syllabus-based generation",
+                  "Marks-based descriptive questions",
+                  "Automatic result saving",
+                ].map((item) => (
+                  <div key={item} className="flex items-center gap-2">
+                    <Check className="h-3.5 w-3.5 text-emerald-400" />
+                    {item}
+                  </div>
+                ))}
               </div>
 
               <button

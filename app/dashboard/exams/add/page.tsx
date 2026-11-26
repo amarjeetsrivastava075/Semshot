@@ -586,7 +586,7 @@ Practice Test:
 
     const count = getQuestionCount();
     const controller = new AbortController();
-    const timeout = window.setTimeout(() => controller.abort(), 90000);
+    const timeout = window.setTimeout(() => controller.abort(), 240000);
 
     try {
       setGenerating(true);
@@ -828,7 +828,7 @@ Practice Test:
     }
 
     const controller = new AbortController();
-    const timeout = window.setTimeout(() => controller.abort(), 90000);
+    const timeout = window.setTimeout(() => controller.abort(), 240000);
 
     try {
       setEvaluating(true);
@@ -1122,6 +1122,103 @@ Practice Test:
       </main>
     );
   }
+  if (started && exam) {
+  const question = exam.questions[currentQuestion];
+
+  return (
+    <main className="min-h-screen bg-[#050505] px-4 py-8 text-white">
+      <div className="mx-auto max-w-4xl">
+        <div className="mb-6 flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold">{exam.subject}</h1>
+            <p className="text-sm text-zinc-400">
+              Question {currentQuestion + 1} of {exam.questions.length}
+            </p>
+          </div>
+          <div className="rounded-xl border border-blue-500/30 bg-blue-500/10 px-4 py-2 font-bold text-blue-400">
+            {formatTime(timeLeft)}
+          </div>
+        </div>
+
+        <div className="mb-5 h-2 overflow-hidden rounded-full bg-zinc-800">
+          <div
+            className="h-full bg-blue-500"
+            style={{
+              width: `${((currentQuestion + 1) / exam.questions.length) * 100}%`,
+            }}
+          />
+        </div>
+
+        <section className="rounded-2xl border border-white/10 bg-zinc-950 p-6">
+          <p className="mb-3 text-sm text-blue-400">
+            Question {currentQuestion + 1} · {question.marks || 1} Marks
+          </p>
+
+          <h2 className="text-xl font-semibold leading-8">
+            {question.question}
+          </h2>
+
+          {examMode === "practice" ? (
+            <div className="mt-6 space-y-3">
+              {question.options?.map((option, index) => (
+                <button
+                  key={index}
+                  type="button"
+                  onClick={() => chooseAnswer(index)}
+                  className={`w-full rounded-xl border p-4 text-left ${
+                    answers[currentQuestion] === index
+                      ? "border-blue-500 bg-blue-500/10"
+                      : "border-white/10 bg-white/[0.02]"
+                  }`}
+                >
+                  {getOptionLetter(index)}. {option}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <textarea
+              value={String(answers[currentQuestion] || "")}
+              onChange={(e) => writeAnswer(e.target.value)}
+              placeholder={getAnswerPlaceholder(question.marks || 1)}
+              rows={7}
+              className="mt-6 w-full rounded-xl border border-white/10 bg-black p-4 text-white outline-none focus:border-blue-500"
+            />
+          )}
+        </section>
+
+        <div className="mt-6 flex flex-wrap justify-between gap-3">
+          <button
+            type="button"
+            onClick={goPrevious}
+            disabled={currentQuestion === 0}
+            className="rounded-xl border border-white/10 px-5 py-3 disabled:opacity-30"
+          >
+            Previous
+          </button>
+
+          {currentQuestion < exam.questions.length - 1 ? (
+            <button
+              type="button"
+              onClick={goNext}
+              className="rounded-xl bg-blue-600 px-6 py-3 font-semibold"
+            >
+              Next Question
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={finishExam}
+              disabled={evaluating}
+              className="rounded-xl bg-emerald-600 px-6 py-3 font-semibold disabled:opacity-50"
+            >
+              {evaluating ? "Submitting..." : "Submit Exam"}
+            </button>
+          )}
+        </div>
+      </div>
+    </main>
+  );
+}
     if (exam && !started) {
     return (
       <main className="min-h-screen bg-[#050505] px-4 py-8 text-white md:px-8">

@@ -1,3 +1,4 @@
+
 import { GoogleGenAI } from "@google/genai";
 
 const apiKey = process.env.GEMINI_API_KEY;
@@ -9,8 +10,8 @@ if (!apiKey) {
 const ai = new GoogleGenAI({ apiKey });
 
 const MODELS = [
-  "gemini-3.8-flash",
   "gemini-3.5-flash-lite",
+  "gemini-3.8-flash",
 ];
 
 export type GenerateQuestionInput = {
@@ -35,69 +36,42 @@ export type GeneratedQuestion = {
   marks: number;
 };
 
-const wait = (ms: number) =>
-  new Promise((resolve) => setTimeout(resolve, ms));
-
-function isTemporaryError(error: unknown) {
-  const err = error as {
-    status?: number;
-    code?: number | string;
-    message?: string;
-  };
-
-  const status = Number(err.status || err.code);
-
-  return (
-    [408, 429, 500, 502, 503, 504].includes(status) ||
-    /high demand|overloaded|unavailable|rate limit|resource exhausted/i.test(
-      err.message || ""
-    )
-  );
-}
-
 export async function generateQuestions(
   input: GenerateQuestionInput
 ): Promise<GeneratedQuestion[]> {
+  const count = Math.min(Math.max(Number(input.count) || 7, 1), 50);
+
   const prompt = `
-You are the official AI question generator for SemShot.
-
-Generate exactly ${input.count} multiple-choice questions.
-
-ACADEMIC INFORMATION
+Generate exactly ${count} university-level MCQs for SemShot.
 
 Course: ${input.course}
 Branch: ${input.branch}
 Semester: ${input.semester}
 Subject: ${input.subject}
-
-Syllabus Units:
-${input.units.map((unit, index) => `${index + 1}. ${unit}`).join("\n")}
-
 Exam Type: ${input.examType}
 Difficulty: ${input.difficulty}
 
-RULES
+Syllabus:
+${input.units.map((unit, index) => `${index + 1}. ${unit}`).join("\n")}
 
-1. Generate exactly ${input.count} questions.
-2. Questions must belong to the selected subject.
-3. Questions must follow the provided syllabus.
-4. Every question must have exactly 4 options.
-5. Only one correct answer.
-6. Answer must be an index from 0 to 3.
-7. Include a clear explanation.
-8. Include difficulty and relevant topic.
-9. Avoid duplicate and ambiguous questions.
-10. Questions must be suitable for university examinations.
-11. Return only valid JSON in this exact structure:
+Rules:
+- Generate exactly ${count} unique questions.
+- Follow only the given syllabus.
+- Every question must have exactly 4 options.
+- Answer must be an integer from 0 to 3.
+- Include a short explanation.
+- Include topic, difficulty and marks.
+- Return only valid JSON.
 
+Required format:
 {
   "questions": [
     {
       "id": "q1",
       "question": "Question text",
-      "options": ["Option A", "Option B", "Option C", "Option D"],
+      "options": ["A", "B", "C", "D"],
       "answer": 0,
-      "explanation": "Explanation",
+      "explanation": "Short explanation",
       "difficulty": "medium",
       "topic": "Unit 1",
       "marks": 1
@@ -109,71 +83,72 @@ RULES
   let lastError: unknown;
 
   for (const model of MODELS) {
-    for (let attempt = 0; attempt < 2; attempt++) {
-      try {
-        const response = await ai.models.generateContent({
-          model,
-          contents: prompt,
-          config: {
-            responseMimeType: "application/json",
-          },
-        });
+    try {
+      const response = await ai.models.generateContent({
+        model,
+        contents: prompt,
+        config: {
+          responseMimeType: "application/json",
+          temperature: 0.2,
+          maxOutputTokens: 4096,
+        },
+      });
 
-        if (!response.text) {
-          throw new Error("Gemini returned an empty response");
-        }
+      const text = response.text?.trim();
 
-        const parsed = JSON.parse(response.text);
-
-        if (
-          !Array.isArray(parsed.questions) ||
-          parsed.questions.length !== input.count
-        ) {
-          throw new Error("Invalid question format returned by Gemini");
-        }
-
-        return parsed.questions.map(
-          (question: any, index: number): GeneratedQuestion => {
-            if (
-              typeof question.question !== "string" ||
-              !Array.isArray(question.options) ||
-              question.options.length !== 4 ||
-              !Number.isInteger(Number(question.answer)) ||
-              Number(question.answer) < 0 ||
-              Number(question.answer) > 3
-            ) {
-              throw new Error(`Invalid question data at index ${index}`);
-            }
-
-            return {
-              id: question.id || `ai-question-${index + 1}`,
-              question: question.question,
-              options: question.options.map(String),
-              answer: Number(question.answer),
-              explanation: question.explanation || "",
-              difficulty: question.difficulty || "medium",
-              topic: question.topic || input.subject,
-              marks: Number(question.marks || 1),
-            };
-          }
-        );
-      } catch (error) {
-        lastError = error;
-
-        if (!isTemporaryError(error)) {
-          throw error;
-        }
-
-        if (attempt === 0) {
-          await wait(1500);
-        }
+      if (!text) {
+        throw new Error("Gemini returned an empty response");
       }
+
+      const parsed = JSON.parse(text);
+
+      if (
+        !Array.isArray(parsed.questions) ||
+        parsed.questions.length !== count
+      ) {
+        throw new Error("Invalid question count returned by Gemini");
+      }
+
+      return parsed.questions.map(
+        (question: any, index: number): GeneratedQuestion => {
+          const answer = Number(question.answer);
+
+          if (
+            typeof question.question !== "string" ||
+            !Array.isArray(question.options) ||
+            question.options.length !== 4 ||
+            !Number.isInteger(answer) ||
+            answer < 0 ||
+            answer > 3
+          ) {
+            throw new Error(`Invalid question data at index ${index}`);
+          }
+
+          return {
+            id: String(question.id || `ai-question-${index + 1}`),
+            question: question.question,
+            options: question.options.map(String),
+            answer,
+            explanation: String(question.explanation || ""),
+            difficulty: ["easy", "medium", "hard"].includes(
+              question.difficulty
+            )
+              ? question.difficulty
+              : "medium",
+            topic: String(question.topic || input.subject),
+            marks: Math.max(1, Number(question.marks) || 1),
+          };
+        }
+      );
+    } catch (error) {
+      lastError = error;
+      console.error(`Gemini model ${model} failed:`, error);
     }
   }
 
   console.error("All Gemini models failed:", lastError);
 
   throw new Error(
-    "AI exam generation is temporarily unavailable. Please try again in a minute."
+    "AI generation is temporarily unavailable. Please try again."
   );
 }

@@ -504,7 +504,7 @@ End Semester Examination Pattern:
     }
 
     if (examMode === "endsem") {
-      return Math.min(Math.max(questionCount, 10), 50);
+      return Math.min(Math.max(questionCount, 12), 50);
     }
 
     return Math.min(Math.max(questionCount, 5), 50);
@@ -555,10 +555,8 @@ Practice Test:
     }
 
     if (examMode === "endsem") {
-      if (index < 3) return 2;
-      if (index < 6) return 3;
-      if (index < 9) return 4;
-      return 5;
+      const endSemesterMarks = [2, 5, 2, 5, 2, 5, 5, 5, 2, 2, 5, 10];
+      return endSemesterMarks[index] || 5;
     }
 
     return 1;

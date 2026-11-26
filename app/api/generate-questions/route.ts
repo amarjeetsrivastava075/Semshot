@@ -34,12 +34,10 @@ class GenerationError extends Error {
 }
 
 function getModels() {
-  const configured = (process.env.GEMINI_MODELS || process.env.GEMINI_MODEL || "")
-    .split(",")
-    .map((model) => model.trim())
-    .filter(Boolean);
-
-  return configured.length ? configured.slice(0, 2) : ["gemini-3.8-flash"];
+  return [
+    "gemini-3.5-flash-lite",
+    "gemini-3.8-flash"
+  ];
 }
 
 function resolveMode(value: unknown): Mode {

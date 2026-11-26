@@ -42,20 +42,27 @@ export default function MCQsPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          course: "B.Tech",
-          branch: "Computer Science & Engineering",
-          semester: 3,
-          subject: "Database Management System",
-          units: [
+          subjectName: "Database Management System",
+          subjectCode: "DBMS",
+          syllabus: [
             "Introduction to DBMS",
             "ER Model",
             "Relational Model",
             "SQL",
             "Normalization",
           ],
-          count: 10,
+          selectedUnits: [
+            "Introduction to DBMS",
+            "ER Model",
+            "Relational Model",
+            "SQL",
+            "Normalization",
+          ],
+          questionCount: 10,
           difficulty: "mixed",
-          examType: "PRACTICE",
+          questionType: "MCQ",
+          examMode: "practice",
+          examPattern: "Practice Test",
         }),
       });
 
